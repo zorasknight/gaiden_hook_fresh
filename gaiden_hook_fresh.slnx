@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="gaiden_hook_fresh.vcxproj" Id="9baf42ca-ab0d-4f52-8043-6c48c8322bcb" />
+</Solution>
