@@ -375,7 +375,11 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 
     // AP can initialize before inventory exists
 
-    g_AP.Initialize();
+   // AP can initialize before inventory exists
+
+    g_AP.Initialize(
+        "mods/Gaiden_Rando_072526/APState.json"
+    );
 
 
 

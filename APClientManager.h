@@ -12,7 +12,9 @@ class APClientManager
 {
 public:
 
-    bool Initialize();
+    bool Initialize(
+        const std::string& statePath
+    );
 
     void Update();
 

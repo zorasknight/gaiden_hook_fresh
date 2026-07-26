@@ -12,7 +12,11 @@ using json = nlohmann::json;
 
 bool APState::Load()
 {
-    std::filesystem::create_directories("data");
+    std::filesystem::path statePath(filename);
+
+    std::filesystem::create_directories(
+        statePath.parent_path()
+    );
 
     checkedLocations.clear();
     receivedItems.clear();
@@ -75,7 +79,11 @@ bool APState::Load()
 
 bool APState::Save()
 {
-    std::filesystem::create_directories("data");
+    std::filesystem::path statePath(filename);
+
+    std::filesystem::create_directories(
+        statePath.parent_path()
+    );
 
 
     json data;
@@ -110,6 +118,11 @@ bool APState::Save()
 
 
     std::ofstream file(filename);
+
+    printf(
+        "[AP] Saving state to: %s\n",
+        std::filesystem::absolute(filename).string().c_str()
+    );
 
     if (!file.good())
     {
@@ -218,6 +231,77 @@ bool APState::IsItemReceived(int index)
     return false;
 }
 
+void APState::SetFilename(
+    const std::string& path
+)
+{
+    filename = path;
+
+
+    std::filesystem::path statePath(filename);
+
+
+    printf(
+        "\n========== AP STATE DEBUG ==========\n"
+    );
+
+
+    printf(
+        "[AP] Relative path: %s\n",
+        filename.c_str()
+    );
+
+
+    printf(
+        "[AP] Absolute path: %s\n",
+        std::filesystem::absolute(statePath).string().c_str()
+    );
+
+
+    printf(
+        "[AP] Parent folder: %s\n",
+        statePath.parent_path().string().c_str()
+    );
+
+
+    if (std::filesystem::exists(statePath))
+    {
+        printf(
+            "[AP] State file exists\n"
+        );
+
+
+        printf(
+            "[AP] File size: %lld bytes\n",
+            std::filesystem::file_size(statePath)
+        );
+    }
+    else
+    {
+        printf(
+            "[AP] State file does not exist yet\n"
+        );
+    }
+
+
+    if (std::filesystem::exists(statePath.parent_path()))
+    {
+        printf(
+            "[AP] State directory exists\n"
+        );
+    }
+    else
+    {
+        printf(
+            "[AP] State directory missing\n"
+        );
+    }
+
+
+    printf(
+        "====================================\n\n"
+    );
+}
 
 
 std::vector<APReceivedItem>& APState::GetReceivedItems()

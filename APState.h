@@ -47,12 +47,11 @@ public:
 
     const std::vector<APReceivedItem>& GetReceivedItems() const;
     const std::vector<APCheckedLocation>& GetCheckedLocations() const;
-
+    void SetFilename(const std::string& path);
 
 private:
 
-    std::string filename =
-        "data/APState.json";
+    std::string filename;
 
 
     std::vector<APCheckedLocation> checkedLocations;

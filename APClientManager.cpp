@@ -9,8 +9,12 @@
 APClientManager g_AP;
 
 
-bool APClientManager::Initialize()
+bool APClientManager::Initialize(
+    const std::string& statePath
+)
 {
+    state.SetFilename(statePath);
+
     state.Load();
 
     initialized = true;
@@ -95,8 +99,6 @@ bool APClientManager::Connect(
                     "[AP] Requesting received item history...\n"
                 );
 
-
-                client->Sync();
             }
         );
 
