@@ -135,34 +135,55 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;GAIDENHOOKFRESH_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;
+GAIDENHOOKFRESH_EXPORTS;
+_WINDOWS;
+_USRDLL;
+ASIO_STANDALONE;
+_WEBSOCKETPP_CPP11_STL_;
+_WIN32_WINNT=0x0600;
+WIN32_LEAN_AND_MEAN;
+NOMINMAX;
+WSWRAP_NO_COMPRESSION;
+OPENSSL_API_COMPAT=0x10100000L;
+%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)MinHook\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)External\openssl\include;$(SolutionDir)MinHook\include;
+$(ProjectDir)External\apclientpp;
+$(ProjectDir)External\json;
+$(ProjectDir)External\valijson;
+$(ProjectDir)External\websocketpp;
+$(ProjectDir)External\wswrap\include;
+$(ProjectDir)External\asio\include;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>
-      </AdditionalDependencies>
-      <AdditionalLibraryDirectories>
-      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>Shell32.lib;libssl.lib;libcrypto.lib;crypt32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)External\openssl\lib\VC\x64\MD</AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\gaiden_hook\gaidenhook\hooks.h" />
     <ClInclude Include="..\gaiden_hook\gaidenhook\MinHook\MinHook.h" />
     <ClInclude Include="..\gaiden_hook\gaidenhook\patternscan.h" />
+    <ClInclude Include="APClientManager.h" />
+    <ClInclude Include="APItemDatabase.h" />
+    <ClInclude Include="APState.h" />
+    <ClInclude Include="hooks.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\gaiden_hook\gaidenhook\dllmain.cpp" />
     <ClCompile Include="..\gaiden_hook\gaidenhook\hooks.cpp" />
+    <ClCompile Include="APClientManager.cpp" />
+    <ClCompile Include="APItemDatabase.cpp" />
+    <ClCompile Include="APState.cpp" />
+    <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="MinHook\src\buffer.c" />
     <ClCompile Include="MinHook\src\hde\hde32.c" />
     <ClCompile Include="MinHook\src\hde\hde64.c" />
