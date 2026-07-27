@@ -43,6 +43,15 @@ bool APClientManager::Connect(
         );
 
 
+        LoadLibraryA(
+            "mods\\Gaiden_Rando\\libcrypto-3-x64.dll"
+        );
+
+        LoadLibraryA(
+            "mods\\Gaiden_Rando\\libssl-3-x64.dll"
+        );
+
+
         client = std::make_unique<APClient>(
             "Yakuza-Gaiden-Client",
             "Yakuza Gaiden",
@@ -70,9 +79,13 @@ bool APClientManager::Connect(
 
 
         client->set_socket_disconnected_handler(
-            []()
+            [this]()
             {
-                printf("[AP] Socket disconnected\n");
+                connected = false;
+
+                printf(
+                    "[AP] Socket disconnected\n"
+                );
             }
         );
 
@@ -80,9 +93,42 @@ bool APClientManager::Connect(
         client->set_room_info_handler(
             []()
             {
-                printf("[AP] Room info received\n");
+                printf(
+                    "[AP] Room info received\n"
+                );
             }
         );
+
+
+        //
+        // Server confirmed location checks
+        //
+        client->set_location_checked_handler(
+            [this](const std::list<int64_t>& locations)
+            {
+                printf(
+                    "[AP] Location confirmation received\n"
+                );
+
+
+                for (auto location : locations)
+                {
+                    printf(
+                        "[AP] Location acknowledged: %lld\n",
+                        location
+                    );
+
+
+                    state.MarkLocationAcknowledged(
+                        location
+                    );
+                }
+
+
+                state.Save();
+            }
+        );
+
 
 
         client->set_slot_connected_handler(
@@ -90,23 +136,107 @@ bool APClientManager::Connect(
             {
                 connected = true;
 
+
                 printf(
                     "[AP] Slot connected\n"
                 );
 
 
+                //
+                // Flush pending location checks
+                //
                 printf(
-                    "[AP] Requesting received item history...\n"
+                    "[AP] Flushing pending location checks...\n"
                 );
 
+
+                for (auto& location :
+                    state.GetQueuedLocations())
+                {
+                    if (location.queued &&
+                        !location.acknowledged)
+                    {
+                        printf(
+                            "[AP] Resending location check: %lld\n",
+                            location.location_id
+                        );
+
+
+                        client->LocationChecks(
+                            {
+                                location.location_id
+                            }
+                        );
+
+
+                        state.MarkLocationSent(
+                            location.location_id
+                        );
+                    }
+                }
+
+
+
+                //
+                // Retry undelivered AP items
+                //
+                printf(
+                    "[AP] Checking queued received items...\n"
+                );
+
+
+                if (inventoryReadyFlag)
+                {
+                    for (auto& item :
+                        state.GetReceivedItems())
+                    {
+                        if (item.queued &&
+                            !item.delivered)
+                        {
+                            printf(
+                                "[AP] Delivering queued item after reconnect: %lld\n",
+                                item.item_id
+                            );
+
+
+                            ReceiveItem(
+                                item.item_id
+                            );
+
+
+                            state.MarkItemDelivered(
+                                item.index
+                            );
+                        }
+                    }
+                }
+                else
+                {
+                    printf(
+                        "[AP] Inventory not ready, leaving items queued\n"
+                    );
+                }
+
+
+
+                state.Save();
+
+
+                printf(
+                    "[AP] Connection flush complete\n"
+                );
             }
         );
+
 
 
         client->set_slot_refused_handler(
             [](const std::list<std::string>& reasons)
             {
-                printf("[AP] Slot refused:\n");
+                printf(
+                    "[AP] Slot refused:\n"
+                );
+
 
                 for (const auto& reason : reasons)
                 {
@@ -119,9 +249,7 @@ bool APClientManager::Connect(
         );
 
 
-        //
-        // AP -> Game item handling
-        //
+
         client->set_items_received_handler(
             [this](const auto& items)
             {
@@ -136,52 +264,28 @@ bool APClientManager::Connect(
                 );
 
 
-                printf(
-                    "========== AP ITEMS RECEIVED ==========\n"
-                );
-
-
                 for (const auto& item : items)
                 {
                     printf(
-                        "AP Item: %lld\n",
-                        item.item
-                    );
-
-                    printf(
-                        "Index: %d\n",
-                        item.index
-                    );
-
-                    printf(
-                        "Player: %d\n",
-                        item.player
-                    );
-
-                    printf(
-                        "Location: %lld\n",
+                        "[AP] Item %lld Index %d Location %lld\n",
+                        item.item,
+                        item.index,
                         item.location
                     );
 
 
-                    //
-                    // Save item locally
-                    //
-                    state.AddReceivedItem(
+                    state.QueueReceivedItem(
                         item.item,
                         item.location,
                         item.index
                     );
 
 
-                    //
-                    // Give item only once
-                    //
                     if (inventoryReadyFlag &&
-                        !state.IsItemReceived(item.index))
+                        !state.IsItemDelivered(item.index))
                     {
                         printf(
-                            "[AP] Giving item immediately: %lld\n",
+                            "[AP] Delivering item immediately: %lld\n",
                             item.item
                         );
 
@@ -191,27 +295,17 @@ bool APClientManager::Connect(
                         );
 
 
-                        state.MarkItemReceived(
+                        state.MarkItemDelivered(
                             item.index
                         );
                     }
                     else
                     {
                         printf(
-                            "[AP] Inventory not ready or item already received, queued\n"
+                            "[AP] Item queued\n"
                         );
                     }
-
-
-                    printf(
-                        "--------------------------------\n"
-                    );
                 }
-
-
-                printf(
-                    "=======================================\n\n"
-                );
 
 
                 state.Save();
@@ -241,7 +335,10 @@ bool APClientManager::ConnectSlot(
 {
     if (!client)
     {
-        printf("[AP] No client exists\n");
+        printf(
+            "[AP] No client exists\n"
+        );
+
         return false;
     }
 
@@ -317,9 +414,11 @@ void APClientManager::InventoryReady()
     );
 
 
-    for (auto& item : state.GetReceivedItems())
+    for (auto& item :
+        state.GetReceivedItems())
     {
-        if (!item.received)
+        if (item.queued &&
+            !item.delivered)
         {
             printf(
                 "[AP] Giving queued item: %lld\n",
@@ -332,7 +431,9 @@ void APClientManager::InventoryReady()
             );
 
 
-            item.received = true;
+            state.MarkItemDelivered(
+                item.index
+            );
         }
     }
 
@@ -361,29 +462,53 @@ void APClientManager::CheckLocation(
     int64_t location
 )
 {
-    if (!client)
-        return;
-
-
     printf(
-        "[AP] Checking location %lld\n",
+        "[AP] Queueing location check: %lld\n",
         location
     );
 
 
     //
-    // Save locally first
+    // Always save locally first
     //
-    state.AddCheckedLocation(location);
+    state.QueueLocation(
+        location
+    );
+
+
     state.Save();
 
 
-    //
-    // Send to AP server
-    //
-    client->LocationChecks(
-        { location }
+
+    if (!client || !connected)
+    {
+        printf(
+            "[AP] Not connected, location saved for later\n"
+        );
+
+        return;
+    }
+
+
+
+    printf(
+        "[AP] Sending location check immediately\n"
     );
+
+
+    client->LocationChecks(
+        {
+            location
+        }
+    );
+
+
+    state.MarkLocationSent(
+        location
+    );
+
+
+    state.Save();
 }
 
 

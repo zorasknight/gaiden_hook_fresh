@@ -163,8 +163,9 @@ $(ProjectDir)External\asio\include;</AdditionalIncludeDirectories>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Shell32.lib;libssl.lib;libcrypto.lib;crypt32.lib</AdditionalDependencies>
+      <AdditionalDependencies>Shell32.lib;libssl.lib;libcrypto.lib;crypt32.lib;delayimp.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(ProjectDir)External\openssl\lib\VC\x64\MD</AdditionalLibraryDirectories>
+      <DelayLoadDLLs>libssl-3-x64.dll;libcrypto-3-x64.dll</DelayLoadDLLs>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>

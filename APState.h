@@ -5,10 +5,13 @@
 #include <vector>
 
 
-struct APCheckedLocation
+struct APQueuedLocation
 {
     int64_t location_id;
-    bool checked;
+
+    bool queued = true;
+    bool sent = false;
+    bool acknowledged = false;
 };
 
 
@@ -17,7 +20,9 @@ struct APReceivedItem
     int64_t item_id;
     int64_t location_id;
     int index;
-    bool received;
+
+    bool queued = true;
+    bool delivered = false;
 };
 
 
@@ -28,32 +33,46 @@ public:
     bool Load();
     bool Save();
 
-
-    void AddCheckedLocation(int64_t location);
-    bool HasCheckedLocation(int64_t location);
+    void SetFilename(const std::string& path);
 
 
-    void AddReceivedItem(
+    // =========================
+    // Outgoing location queue
+    // =========================
+
+    void QueueLocation(int64_t location);
+
+    bool IsLocationQueued(int64_t location);
+    bool IsLocationAcknowledged(int64_t location);
+
+    void MarkLocationSent(int64_t location);
+    void MarkLocationAcknowledged(int64_t location);
+
+    std::vector<APQueuedLocation>& GetQueuedLocations();
+    const std::vector<APQueuedLocation>& GetQueuedLocations() const;
+
+
+    // =========================
+    // Incoming AP item queue
+    // =========================
+
+    void QueueReceivedItem(
         int64_t item,
         int64_t location,
         int index
     );
 
+    bool IsItemDelivered(int index);
+    void MarkItemDelivered(int index);
 
-    bool IsItemReceived(int index);
-    void MarkItemReceived(int index);
     std::vector<APReceivedItem>& GetReceivedItems();
-    std::vector<APCheckedLocation>& GetCheckedLocations();
-
     const std::vector<APReceivedItem>& GetReceivedItems() const;
-    const std::vector<APCheckedLocation>& GetCheckedLocations() const;
-    void SetFilename(const std::string& path);
+
 
 private:
 
     std::string filename;
 
-
-    std::vector<APCheckedLocation> checkedLocations;
+    std::vector<APQueuedLocation> queuedLocations;
     std::vector<APReceivedItem> receivedItems;
 };

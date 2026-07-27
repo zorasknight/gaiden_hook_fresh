@@ -10,43 +10,84 @@
 using json = nlohmann::json;
 
 
+
 bool APState::Load()
 {
     std::filesystem::path statePath(filename);
 
-    std::filesystem::create_directories(
-        statePath.parent_path()
-    );
+    if (!statePath.parent_path().empty())
+    {
+        std::filesystem::create_directories(
+            statePath.parent_path()
+        );
+    }
 
-    checkedLocations.clear();
+
+    queuedLocations.clear();
     receivedItems.clear();
 
 
     std::ifstream file(filename);
 
+
     if (!file.good())
     {
-        printf("[AP] No state file found, creating one\n");
+        printf(
+            "[AP] No state file found, creating one\n"
+        );
+
         return Save();
     }
 
 
+
     json data;
+
     file >> data;
 
 
-    if (data.contains("checked_locations"))
+
+    //
+    // New format
+    //
+    if (data.contains("queued_locations"))
     {
-        for (auto& loc : data["checked_locations"])
+        for (auto& loc : data["queued_locations"])
         {
-            checkedLocations.push_back(
+            queuedLocations.push_back(
                 {
                     loc["location_id"],
-                    loc["checked"]
+                    loc.value("queued", true),
+                    loc.value("sent", false),
+                    loc.value("acknowledged", false)
                 }
             );
         }
     }
+
+
+    //
+    // Old format compatibility
+    //
+    else if (data.contains("checked_locations"))
+    {
+        for (auto& loc : data["checked_locations"])
+        {
+            bool checked =
+                loc.value("checked", false);
+
+
+            queuedLocations.push_back(
+                {
+                    loc["location_id"],
+                    !checked,
+                    checked,
+                    checked
+                }
+            );
+        }
+    }
+
 
 
     if (data.contains("received_items"))
@@ -55,19 +96,22 @@ bool APState::Load()
         {
             receivedItems.push_back(
                 {
-                    item["item_id"],
-                    item["location_id"],
-                    item["index"],
-                    item["received"]
+                    item["item_id"].get<int64_t>(),
+                    item["location_id"].get<int64_t>(),
+                    item["index"].get<int>(),
+
+                    item.value("queued", true),
+                    item.value("delivered", false)
                 }
             );
         }
     }
 
 
+
     printf(
         "[AP] Loaded state: %zu locations, %zu items\n",
-        checkedLocations.size(),
+        queuedLocations.size(),
         receivedItems.size()
     );
 
@@ -77,33 +121,50 @@ bool APState::Load()
 
 
 
+
+
 bool APState::Save()
 {
     std::filesystem::path statePath(filename);
 
-    std::filesystem::create_directories(
-        statePath.parent_path()
-    );
+
+    if (!statePath.parent_path().empty())
+    {
+        std::filesystem::create_directories(
+            statePath.parent_path()
+        );
+    }
+
 
 
     json data;
 
-    data["version"] = 1;
+
+    data["version"] = 2;
 
 
-    data["checked_locations"] = json::array();
 
-    for (auto& loc : checkedLocations)
+    data["queued_locations"] =
+        json::array();
+
+
+    for (auto& loc : queuedLocations)
     {
-        data["checked_locations"].push_back(
+        data["queued_locations"].push_back(
             {
                 {"location_id", loc.location_id},
-                {"checked", loc.checked}
-            });
+                {"queued", loc.queued},
+                {"sent", loc.sent},
+                {"acknowledged", loc.acknowledged}
+            }
+        );
     }
 
 
-    data["received_items"] = json::array();
+
+    data["received_items"] =
+        json::array();
+
 
     for (auto& item : receivedItems)
     {
@@ -112,67 +173,93 @@ bool APState::Save()
                 {"item_id", item.item_id},
                 {"location_id", item.location_id},
                 {"index", item.index},
-                {"received", item.received}
-            });
+                {"queued", item.queued},
+                {"delivered", item.delivered}
+            }
+        );
     }
 
 
-    std::ofstream file(filename);
 
     printf(
         "[AP] Saving state to: %s\n",
         std::filesystem::absolute(filename).string().c_str()
     );
 
+
+
+    std::ofstream file(filename);
+
+
     if (!file.good())
     {
-        printf("[AP ERROR] Failed to save state file\n");
+        printf(
+            "[AP ERROR] Failed to save state file\n"
+        );
+
         return false;
     }
+
 
 
     file << data.dump(4);
 
+
+
     if (!file.good())
     {
-        printf("[AP ERROR] Failed writing state file\n");
+        printf(
+            "[AP ERROR] Failed writing state file\n"
+        );
+
         return false;
     }
+
 
     return true;
 }
 
 
 
-void APState::AddCheckedLocation(int64_t location)
+
+
+
+// =====================================================
+// Location queue
+// =====================================================
+
+
+void APState::QueueLocation(
+    int64_t location
+)
 {
-    for (auto& entry : checkedLocations)
+    for (auto& entry : queuedLocations)
     {
         if (entry.location_id == location)
-        {
-            entry.checked = true;
             return;
-        }
     }
 
 
-    checkedLocations.push_back(
+    queuedLocations.push_back(
         {
             location,
-            true
-        });
+            true,
+            false,
+            false
+        }
+    );
 }
 
 
 
-bool APState::HasCheckedLocation(int64_t location)
+bool APState::IsLocationQueued(
+    int64_t location
+)
 {
-    for (const auto& entry : checkedLocations)
+    for (auto& entry : queuedLocations)
     {
         if (entry.location_id == location)
-        {
-            return entry.checked;
-        }
+            return entry.queued;
     }
 
 
@@ -181,7 +268,63 @@ bool APState::HasCheckedLocation(int64_t location)
 
 
 
-void APState::AddReceivedItem(
+bool APState::IsLocationAcknowledged(
+    int64_t location
+)
+{
+    for (auto& entry : queuedLocations)
+    {
+        if (entry.location_id == location)
+            return entry.acknowledged;
+    }
+
+
+    return false;
+}
+
+
+
+void APState::MarkLocationSent(
+    int64_t location
+)
+{
+    for (auto& entry : queuedLocations)
+    {
+        if (entry.location_id == location)
+        {
+            entry.sent = true;
+            return;
+        }
+    }
+}
+
+
+
+void APState::MarkLocationAcknowledged(
+    int64_t location
+)
+{
+    for (auto& entry : queuedLocations)
+    {
+        if (entry.location_id == location)
+        {
+            entry.acknowledged = true;
+            entry.queued = false;
+            return;
+        }
+    }
+}
+
+
+
+
+
+// =====================================================
+// Incoming items
+// =====================================================
+
+
+void APState::QueueReceivedItem(
     int64_t item,
     int64_t location,
     int index
@@ -190,9 +333,7 @@ void APState::AddReceivedItem(
     for (auto& entry : receivedItems)
     {
         if (entry.index == index)
-        {
             return;
-        }
     }
 
 
@@ -201,35 +342,48 @@ void APState::AddReceivedItem(
             item,
             location,
             index,
+            true,
             false
-        });
+        }
+    );
 }
 
-void APState::MarkItemReceived(int index)
+
+
+bool APState::IsItemDelivered(
+    int index
+)
 {
     for (auto& item : receivedItems)
     {
         if (item.index == index)
-        {
-            item.received = true;
-            return;
-        }
-    }
-}
-
-bool APState::IsItemReceived(int index)
-{
-    for (const auto& item : receivedItems)
-    {
-        if (item.index == index)
-        {
-            return item.received;
-        }
+            return item.delivered;
     }
 
 
     return false;
 }
+
+
+
+void APState::MarkItemDelivered(
+    int index
+)
+{
+    for (auto& item : receivedItems)
+    {
+        if (item.index == index)
+        {
+            item.delivered = true;
+            item.queued = false;
+            return;
+        }
+    }
+}
+
+
+
+
 
 void APState::SetFilename(
     const std::string& path
@@ -258,21 +412,10 @@ void APState::SetFilename(
     );
 
 
-    printf(
-        "[AP] Parent folder: %s\n",
-        statePath.parent_path().string().c_str()
-    );
-
-
     if (std::filesystem::exists(statePath))
     {
         printf(
-            "[AP] State file exists\n"
-        );
-
-
-        printf(
-            "[AP] File size: %lld bytes\n",
+            "[AP] State file exists (%lld bytes)\n",
             std::filesystem::file_size(statePath)
         );
     }
@@ -284,24 +427,28 @@ void APState::SetFilename(
     }
 
 
-    if (std::filesystem::exists(statePath.parent_path()))
-    {
-        printf(
-            "[AP] State directory exists\n"
-        );
-    }
-    else
-    {
-        printf(
-            "[AP] State directory missing\n"
-        );
-    }
-
-
     printf(
         "====================================\n\n"
     );
 }
+
+
+
+
+
+
+std::vector<APQueuedLocation>& APState::GetQueuedLocations()
+{
+    return queuedLocations;
+}
+
+
+
+const std::vector<APQueuedLocation>& APState::GetQueuedLocations() const
+{
+    return queuedLocations;
+}
+
 
 
 std::vector<APReceivedItem>& APState::GetReceivedItems()
@@ -311,19 +458,7 @@ std::vector<APReceivedItem>& APState::GetReceivedItems()
 
 
 
-std::vector<APCheckedLocation>& APState::GetCheckedLocations()
-{
-    return checkedLocations;
-}
-
 const std::vector<APReceivedItem>& APState::GetReceivedItems() const
 {
     return receivedItems;
 }
-
-
-const std::vector<APCheckedLocation>& APState::GetCheckedLocations() const
-{
-    return checkedLocations;
-}
-

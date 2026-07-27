@@ -333,7 +333,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 
 
     if (!g_APItems.Load(
-        "mods/Gaiden_Rando_072526/item_mapping.csv"
+        "mods/Gaiden_Rando/item_mapping.csv"
     ))
     {
         printf(
@@ -378,7 +378,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
    // AP can initialize before inventory exists
 
     g_AP.Initialize(
-        "mods/Gaiden_Rando_072526/APState.json"
+        "mods/Gaiden_Rando/APState.json"
     );
 
 
