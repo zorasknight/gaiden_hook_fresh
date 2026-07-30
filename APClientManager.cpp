@@ -6,7 +6,64 @@
 #include <cstdio>
 #include <climits>
 
+#include <fstream>
+#include <nlohmann/json.hpp>
+
 APClientManager g_AP;
+static const char* AP_CONFIG =
+"mods/Gaiden_Rando/APConfig.json";
+
+
+
+bool SaveAPConfig(
+    const std::string& host,
+    int port,
+    const std::string& slot,
+    const std::string& password
+);
+
+
+
+bool LoadAPConfig(
+    std::string& host,
+    int& port,
+    std::string& slot,
+    std::string& password
+);
+
+
+
+bool LoadAPConfig(
+    std::string& host,
+    int& port,
+    std::string& slot,
+    std::string& password
+)
+{
+    std::ifstream file(AP_CONFIG);
+
+    if (!file)
+        return false;
+
+
+    nlohmann::json json;
+
+    try
+    {
+        file >> json;
+
+        host = json["host"];
+        port = json["port"];
+        slot = json["slot"];
+        password = json["password"];
+
+        return true;
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
 
 
 bool APClientManager::Initialize(
@@ -21,8 +78,72 @@ bool APClientManager::Initialize(
 
     printf("[AP] Manager initialized\n");
 
+    std::string host;
+    std::string slot;
+    std::string password;
+    int port = 0;
+
+
+    if (LoadAPConfig(
+        host,
+        port,
+        slot,
+        password))
+    {
+        printf(
+            "[AP] Previous connection found: %s:%d\n",
+            host.c_str(),
+            port
+        );
+
+
+        if (Connect(host, port))
+        {
+            if (!slot.empty())
+            {
+                ConnectSlot(
+                    slot,
+                    password
+                );
+            }
+        }
+    }
+
     return true;
 }
+
+
+
+
+bool SaveAPConfig(
+    const std::string& host,
+    int port,
+    const std::string& slot,
+    const std::string& password
+)
+{
+    nlohmann::json json;
+
+    json["host"] = host;
+    json["port"] = port;
+    json["slot"] = slot;
+    json["password"] = password;
+
+
+    std::ofstream file(AP_CONFIG);
+
+    if (file)
+    {
+        file << json.dump(4);
+
+        printf("[AP] Connection saved\n");
+
+        return true;
+    }
+    return false;
+}
+
+
 
 
 
@@ -31,11 +152,18 @@ bool APClientManager::Connect(
     int port
 )
 {
+    if (client)
+    {
+        printf("[AP] Closing previous client\n");
+        client.reset();
+    }
     try
     {
         std::string address =
             host + ":" + std::to_string(port);
-
+        lastHost = host;
+        lastPort = port;
+        connectAttempts = 0;
 
         printf(
             "[AP] Connecting to %s\n",
@@ -60,20 +188,46 @@ bool APClientManager::Connect(
 
 
         client->set_socket_connected_handler(
-            []()
+            [this]()
             {
-                printf("[AP] Socket connected\n");
+                connectAttempts = 0;
+
+                printf(
+                    "[AP] Socket connected\n"
+                );
             }
         );
 
 
         client->set_socket_error_handler(
-            [](const std::string& error)
+            [this](const std::string& error)
             {
+                connectAttempts++;
+
                 printf(
                     "[AP ERROR] %s\n",
                     error.c_str()
                 );
+
+
+                printf(
+                    "[AP] Connection attempt %d/%d failed\n",
+                    connectAttempts,
+                    MAX_CONNECT_ATTEMPTS
+                );
+
+
+                if (connectAttempts >= MAX_CONNECT_ATTEMPTS)
+                {
+                    printf(
+                        "[AP] Giving up after %d attempts.\n",
+                        MAX_CONNECT_ATTEMPTS
+                    );
+
+                    connected = false;
+
+                    // Don't destroy the client here.
+                }
             }
         );
 
@@ -347,6 +501,14 @@ bool APClientManager::ConnectSlot(
     pendingPassword = password;
 
 
+    SaveAPConfig(
+        lastHost,
+        lastPort,
+        pendingSlot,
+        pendingPassword
+    );
+
+
     try
     {
         client->ConnectSlot(
@@ -379,10 +541,18 @@ bool APClientManager::ConnectSlot(
 
 void APClientManager::Update()
 {
-    if (client)
+    if (!client)
+        return;
+
+    if (!connected &&
+        connectAttempts >= MAX_CONNECT_ATTEMPTS)
     {
-        client->poll();
+        printf("[AP] Cleaning up failed client\n");
+        client.reset();
+        return;
     }
+
+    client->poll();
 }
 
 

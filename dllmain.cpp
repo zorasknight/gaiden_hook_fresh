@@ -32,6 +32,9 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
     while (true)
     {
+
+        arg1[0] = '\0';
+        arg2[0] = '\0';
         printf("> ");
         fflush(stdout);
 
@@ -121,6 +124,43 @@ DWORD WINAPI ConsoleThread(LPVOID)
         // =========================
 
 
+        // New quick connect:
+        // connect archipelago.gg:36115
+        // Also accepts:
+        // /connect archipelago.gg:36115
+        else if (
+            sscanf_s(
+                command,
+                "connect %255[^:]:%d",
+                arg1,
+                (unsigned)_countof(arg1),
+                &itemID
+            ) == 2 ||
+            sscanf_s(
+                command,
+                "/connect %255[^:]:%d",
+                arg1,
+                (unsigned)_countof(arg1),
+                &itemID
+            ) == 2
+            )
+        {
+            printf(
+                "[AP] Connecting to %s:%d\n",
+                arg1,
+                itemID
+            );
+
+
+            g_AP.Connect(
+                arg1,
+                itemID
+            );
+        }
+
+
+        // Old connect format kept:
+        // ap connect archipelago.gg 36115
         else if (
             sscanf_s(
                 command,
@@ -145,15 +185,30 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
 
 
-        else if (strncmp(command, "ap slot ", 8) == 0)
+        // New quick slot:
+        // slot MySlot password
+        //
+        // Old:
+        // ap slot MySlot password
+        else if (
+            strncmp(command, "slot ", 5) == 0 ||
+            strncmp(command, "ap slot ", 8) == 0
+            )
         {
+            int offset = 5;
+
+
+            if (strncmp(command, "ap slot ", 8) == 0)
+                offset = 8;
+
+
             arg1[0] = '\0';
             arg2[0] = '\0';
 
 
             int count = sscanf_s(
-                command,
-                "ap slot %255s %255s",
+                command + offset,
+                "%255s %255s",
                 arg1,
                 (unsigned)_countof(arg1),
                 arg2,
@@ -188,9 +243,17 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
 
 
-        else if (strncmp(command, "ap say ", 7) == 0)
+        else if (strncmp(command, "say ", 4) == 0 ||
+            strncmp(command, "ap say ", 7) == 0)
         {
-            std::string message = command + 7;
+            int offset = 4;
+
+
+            if (strncmp(command, "ap say ", 7) == 0)
+                offset = 7;
+
+
+            std::string message = command + offset;
 
 
             size_t newline = message.find('\n');
@@ -202,18 +265,28 @@ DWORD WINAPI ConsoleThread(LPVOID)
             g_AP.Say(message);
         }
 
-        else if (sscanf_s(command, "ap give %d", &itemID) == 1)
+
+
+        else if (
+            sscanf_s(command, "give %d", &itemID) == 1 ||
+            sscanf_s(command, "ap give %d", &itemID) == 1
+            )
         {
-            printf("[AP] Giving item %d\n", itemID);
+            printf(
+                "[AP] Giving item %d\n",
+                itemID
+            );
+
+
             GiveAPItem(itemID);
         }
 
+
+
         else if (
-            sscanf_s(
-                command,
-                "ap check %d",
-                &itemID
-            ) == 1)
+            sscanf_s(command, "check %d", &itemID) == 1 ||
+            sscanf_s(command, "ap check %d", &itemID) == 1
+            )
         {
             printf(
                 "[AP] Checking location %d\n",
@@ -265,9 +338,29 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 
     AllocConsole();
 
+    SetConsoleTitleA("Gaiden Archipelago");
 
-    FILE* fp;
+    HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
 
+    DWORD inputMode = 0;
+    if (GetConsoleMode(hInput, &inputMode))
+    {
+        inputMode |= ENABLE_EXTENDED_FLAGS;
+        inputMode |= ENABLE_INSERT_MODE;
+        inputMode |= ENABLE_QUICK_EDIT_MODE;
+
+        SetConsoleMode(hInput, inputMode);
+    }
+
+    HANDLE hOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    DWORD outputMode = 0;
+    if (GetConsoleMode(hOutput, &outputMode))
+    {
+        SetConsoleMode(hOutput, outputMode);
+    }
+
+    FILE* fp = nullptr;
 
     freopen_s(
         &fp,
@@ -276,13 +369,14 @@ DWORD WINAPI MainThread(LPVOID lpParam)
         stdout
     );
 
-
     freopen_s(
         &fp,
         "CONIN$",
         "r",
         stdin
     );
+
+    setvbuf(stdout, nullptr, _IONBF, 0);
 
 
 
@@ -368,12 +462,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     }
 
 
-
     fflush(stdout);
-
-
-
-    // AP can initialize before inventory exists
 
    // AP can initialize before inventory exists
 

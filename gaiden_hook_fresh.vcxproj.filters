@@ -13,17 +13,8 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\MinHook">
-      <UniqueIdentifier>{cc34ece6-1d71-4851-abe5-277353e4e419}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\gaiden_hook\gaidenhook\patternscan.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gaiden_hook\gaidenhook\MinHook\MinHook.h">
-      <Filter>Header Files\MinHook</Filter>
-    </ClInclude>
     <ClInclude Include="APClientManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -36,11 +27,11 @@
     <ClInclude Include="APState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="patternscan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\gaiden_hook\gaidenhook\hooks.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MinHook\src\buffer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,6 +57,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="hooks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

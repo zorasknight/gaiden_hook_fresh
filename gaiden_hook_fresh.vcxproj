@@ -172,19 +172,18 @@ $(ProjectDir)External\asio\include;</AdditionalIncludeDirectories>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\gaiden_hook\gaidenhook\MinHook\MinHook.h" />
-    <ClInclude Include="..\gaiden_hook\gaidenhook\patternscan.h" />
     <ClInclude Include="APClientManager.h" />
     <ClInclude Include="APItemDatabase.h" />
     <ClInclude Include="APState.h" />
     <ClInclude Include="hooks.h" />
+    <ClInclude Include="patternscan.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\gaiden_hook\gaidenhook\hooks.cpp" />
     <ClCompile Include="APClientManager.cpp" />
     <ClCompile Include="APItemDatabase.cpp" />
     <ClCompile Include="APState.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="hooks.cpp" />
     <ClCompile Include="MinHook\src\buffer.c" />
     <ClCompile Include="MinHook\src\hde\hde32.c" />
     <ClCompile Include="MinHook\src\hde\hde64.c" />

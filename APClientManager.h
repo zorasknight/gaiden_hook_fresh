@@ -9,6 +9,26 @@
 #include "apclient.hpp"
 
 
+//
+// AP connection config
+//
+bool SaveAPConfig(
+    const std::string& host,
+    int port,
+    const std::string& slot,
+    const std::string& password
+);
+
+
+bool LoadAPConfig(
+    std::string& host,
+    int& port,
+    std::string& slot,
+    std::string& password
+);
+
+
+
 class APClientManager
 {
 public:
@@ -79,17 +99,29 @@ public:
 private:
 
     std::unique_ptr<APClient> client;
+    int connectAttempts = 0;
+    static constexpr int MAX_CONNECT_ATTEMPTS = 3;
 
-
+    //
+    // Current connection info
+    //
     std::string pendingSlot;
     std::string pendingPassword;
 
+    std::string lastHost;
+    int lastPort = 0;
 
 
+    //
+    // Persistent state
+    //
     APState state;
 
 
 
+    //
+    // Runtime flags
+    //
     bool inventoryReadyFlag = false;
     bool initialized = false;
     bool connected = false;
