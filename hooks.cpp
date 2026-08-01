@@ -3,16 +3,48 @@
 #include "patternscan.h"
 #include "MinHook.h"
 
-
 #include <stdio.h>
 
 #include "APItemDatabase.h"
 #include "APClientManager.h"
 
+#include <nlohmann/json.hpp>
+#include <fstream>
+#include <filesystem>
+#include <unordered_map>
+#include <vector>
+#include <string>
+
+constexpr int GOLD_BALL_ID = 6056;
+
+bool g_goalSent = false;
+
+using json = nlohmann::json;
+
 
 inventory_set_quantity_t original_inventory = nullptr;
+
 uint64_t g_inventoryPtr = 0;
 uint64_t g_param1 = 0;
+
+
+// =====================================================
+// Progressive item data
+// =====================================================
+
+struct ProgressiveItem
+{
+    std::string name;
+    std::vector<int> levels;
+};
+
+
+std::unordered_map<int, ProgressiveItem> g_progressiveItems;
+
+
+// =====================================================
+// Inventory state
+// =====================================================
 
 bool IsInventoryReady()
 {
@@ -21,37 +53,143 @@ bool IsInventoryReady()
 
 
 // =====================================================
-// Inventory helpers
+// Progressive item database
 // =====================================================
 
+bool LoadProgressiveItems(const std::string& path)
+{
+    std::ifstream file(path);
+
+    if (!file.is_open())
+    {
+        printf(
+            "[AP] Failed to open progressive_items.json: %s\n",
+            path.c_str()
+        );
+
+        return false;
+    }
+
+
+    try
+    {
+        json data;
+
+        file >> data;
+
+        g_progressiveItems.clear();
+
+
+        for (auto& [idString, value] : data.items())
+        {
+            int progressiveID = std::stoi(idString);
+
+            ProgressiveItem item;
+
+            item.name = value.value(
+                "name",
+                ""
+            );
+
+
+            if (
+                value.contains("levels")
+                && value["levels"].is_array()
+                )
+            {
+                for (const auto& levelID : value["levels"])
+                {
+                    item.levels.push_back(
+                        levelID.get<int>()
+                    );
+                }
+            }
+
+
+            g_progressiveItems[progressiveID] = item;
+
+        }
+
+
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        printf(
+            "[AP] Failed to parse progressive_items.json: %s\n",
+            e.what()
+        );
+
+        return false;
+    }
+}
+
+
+// Forward declaration
+void GiveProgressiveAPItem(int progressiveID);
+
+
+// =====================================================
+// Inventory helpers
+// =====================================================
 
 void DumpInventory()
 {
     if (!IsInventoryReady())
     {
-        printf("[Inventory] Not initialized yet.\n");
+        printf(
+            "[Inventory] Not initialized yet.\n"
+        );
+
         return;
     }
 
 
-    uint64_t entriesPtr = *(uint64_t*)g_inventoryPtr;
-    int count = *(int*)(g_inventoryPtr + 0xC);
+    uint64_t entriesPtr =
+        *(uint64_t*)g_inventoryPtr;
+
+    int count =
+        *(int*)(g_inventoryPtr + 0xC);
 
 
-    printf("\n========== INVENTORY DUMP ==========\n");
-    printf("Inventory Ptr: 0x%llX\n", g_inventoryPtr);
-    printf("Entries Ptr:   0x%llX\n", entriesPtr);
-    printf("Count:         %d\n\n", count);
+    printf(
+        "\n========== INVENTORY DUMP ==========\n"
+    );
+
+
+    printf(
+        "Inventory Ptr: 0x%llX\n",
+        g_inventoryPtr
+    );
+
+
+    printf(
+        "Entries Ptr:   0x%llX\n",
+        entriesPtr
+    );
+
+
+    printf(
+        "Count:         %d\n\n",
+        count
+    );
 
 
     for (int i = 0; i < count; i++)
     {
-        uint64_t entry = entriesPtr + (i * 0x10);
+        uint64_t entry =
+            entriesPtr + (i * 0x10);
 
 
-        int itemID = *(int*)(entry + 0x0);
-        int amount = *(int*)(entry + 0x4);
-        int unknown = *(int*)(entry + 0x8);
+        int itemID =
+            *(int*)(entry + 0x0);
+
+        int amount =
+            *(int*)(entry + 0x4);
+
+        int unknown =
+            *(int*)(entry + 0x8);
 
 
         printf(
@@ -64,9 +202,10 @@ void DumpInventory()
     }
 
 
-    printf("====================================\n\n");
+    printf(
+        "====================================\n\n"
+    );
 }
-
 
 
 int GetItemAmount(int itemID)
@@ -75,17 +214,24 @@ int GetItemAmount(int itemID)
         return 0;
 
 
-    uint64_t entriesPtr = *(uint64_t*)g_inventoryPtr;
-    int count = *(int*)(g_inventoryPtr + 0xC);
+    uint64_t entriesPtr =
+        *(uint64_t*)g_inventoryPtr;
+
+    int count =
+        *(int*)(g_inventoryPtr + 0xC);
 
 
     for (int i = 0; i < count; i++)
     {
-        uint64_t entry = entriesPtr + (i * 0x10);
+        uint64_t entry =
+            entriesPtr + (i * 0x10);
 
 
-        int id = *(int*)(entry + 0x0);
-        int amount = *(int*)(entry + 0x4);
+        int id =
+            *(int*)(entry + 0x0);
+
+        int amount =
+            *(int*)(entry + 0x4);
 
 
         if (id == itemID)
@@ -97,7 +243,6 @@ int GetItemAmount(int itemID)
 
     return 0;
 }
-
 
 
 void SetItemAmount(
@@ -141,14 +286,40 @@ void SetItemAmount(
         g_inventoryPtr,
         0
     );
-}
 
+    //
+    // AP-only goal check
+    //
+    if (
+        itemID == GOLD_BALL_ID &&
+        !g_goalSent
+        )
+    {
+        int count = GetItemAmount(GOLD_BALL_ID);
+
+        printf(
+            "[AP] Gold Ball count after injection: %d\n",
+            count
+        );
+
+
+        if (count >= 7)
+        {
+            printf(
+                "[AP] 7 Gold Balls collected! Sending goal!\n"
+            );
+
+            g_AP.SendGoal();
+
+            g_goalSent = true;
+        }
+    }
+}
 
 
 // =====================================================
 // AP item injection
 // =====================================================
-
 
 void GiveAPItem(int64_t itemID)
 {
@@ -163,8 +334,30 @@ void GiveAPItem(int64_t itemID)
     }
 
 
+    int id = (int)itemID;
+
+
+    // -------------------------------------------------
+    // Progressive AP item
+    // -------------------------------------------------
+
+    if (
+        g_progressiveItems.find(id)
+        != g_progressiveItems.end()
+        )
+    {
+        GiveProgressiveAPItem(id);
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // Normal AP item
+    // -------------------------------------------------
+
     int current =
-        GetItemAmount((int)itemID);
+        GetItemAmount(id);
 
 
     printf(
@@ -176,17 +369,123 @@ void GiveAPItem(int64_t itemID)
 
 
     SetItemAmount(
-        (int)itemID,
+        id,
         current + 1
     );
 }
 
 
+// =====================================================
+// Progressive AP item injection
+// =====================================================
+
+void GiveProgressiveAPItem(int progressiveID)
+{
+    auto it =
+        g_progressiveItems.find(progressiveID);
+
+
+    if (
+        it
+        == g_progressiveItems.end()
+        )
+    {
+        printf(
+            "[AP] Progressive item %d not found in database\n",
+            progressiveID
+        );
+
+        return;
+    }
+
+
+    const ProgressiveItem& item =
+        it->second;
+
+
+    // -------------------------------------------------
+    // How many copies of the AP progressive item
+    // have we already received?
+    // -------------------------------------------------
+
+    int current =
+        GetItemAmount(progressiveID);
+
+
+    int nextCount =
+        current + 1;
+
+
+    // -------------------------------------------------
+    // Prevent going beyond the final level
+    // -------------------------------------------------
+
+    if (
+        nextCount
+    > (int)item.levels.size()
+        )
+    {
+        printf(
+            "[AP] %s already at max level (%d)\n",
+            item.name.c_str(),
+            (int)item.levels.size()
+        );
+
+        return;
+    }
+
+
+    // -------------------------------------------------
+    // Select the corresponding actual game item
+    //
+    // First AP copy:
+    // levels[0]
+    //
+    // Second AP copy:
+    // levels[1]
+    //
+    // etc.
+    // -------------------------------------------------
+
+    int levelID =
+        item.levels[nextCount - 1];
+
+
+    printf(
+        "[AP] Giving %s level %d -> game item %d\n",
+        item.name.c_str(),
+        nextCount,
+        levelID
+    );
+
+
+    // -------------------------------------------------
+    // Track how many progressive AP items we've
+    // received.
+    // -------------------------------------------------
+
+    SetItemAmount(
+        progressiveID,
+        nextCount
+    );
+
+
+    // -------------------------------------------------
+    // Give the corresponding actual skill book.
+    //
+    // We intentionally DO NOT remove previous books.
+    // -------------------------------------------------
+
+    SetItemAmount(
+        levelID,
+        1
+    );
+}
+
 
 // =====================================================
 // Inventory hook
 // =====================================================
-
 
 uint64_t hooked_inventory(
     uint64_t param1,
@@ -199,10 +498,17 @@ uint64_t hooked_inventory(
     //
     // Ignore fake startup calls
     //
-    if (g_inventoryPtr == 0 && itemID >= 4000 && itemID != 6023)
+    if (
+        g_inventoryPtr == 0
+        && itemID >= 4000
+        && itemID != 6023
+        )
     {
-        g_inventoryPtr = inventoryPtr;
-        g_param1 = param1;
+        g_inventoryPtr =
+            inventoryPtr;
+
+        g_param1 =
+            param1;
 
 
         printf(
@@ -220,6 +526,7 @@ uint64_t hooked_inventory(
     }
 
 
+
     //
     // Game -> AP location checks
     //
@@ -228,7 +535,12 @@ uint64_t hooked_inventory(
         APItemEntry entry;
 
 
-        if (g_APItems.GetItem(itemID, entry))
+        if (
+            g_APItems.GetItem(
+                itemID,
+                entry
+            )
+            )
         {
             printf(
                 "[AP] Checking location %lld from item %d\n",
@@ -243,88 +555,70 @@ uint64_t hooked_inventory(
         }
     }
 
-
-
     printf(
-        "\n========== Inventory_SetQuantity ==========\n"
-    );
-
-
-    printf(
-        "Item ID: %d\n",
+        "Gained Item ID: %d\n",
         itemID
     );
 
 
-    printf(
-        "Amount: %d\n",
-        amount
-    );
-
-
-    printf(
-        "Mode: %d\n",
-        mode
-    );
-
-
-    printf(
-        "Param1: 0x%llX\n",
-        param1
-    );
-
-
-    printf(
-        "Inventory Ptr: 0x%llX\n",
-        inventoryPtr
-    );
-
-
-    printf(
-        "==========================================\n"
-    );
-
-
-
-    return original_inventory(
+    uint64_t result = original_inventory(
         param1,
         itemID,
         amount,
         inventoryPtr,
         mode
     );
+
+    // Goal check after inventory has actually updated
+    if (
+        itemID == GOLD_BALL_ID &&
+        !g_goalSent &&
+        IsInventoryReady()
+        )
+    {
+        int count = GetItemAmount(GOLD_BALL_ID);
+
+        if (count >= 7)
+        {
+            printf("[AP] 7 Gold Balls collected! Sending goal!\n");
+
+            g_AP.SendGoal();
+
+            g_goalSent = true;
+        }
+    }
+
+    return result;
 }
+
 
 // =====================================================
 // Hook setup
 // =====================================================
 
-
 bool HookInventory()
 {
-    printf(
-        "[Inventory] Searching for Inventory_SetQuantity...\n"
-    );
 
 
-    uintptr_t address = PatternScan(
-        "48 89 5C 24 18 "
-        "55 "
-        "57 "
-        "41 56 "
-        "48 83 EC 20 "
-        "41 8B 79 0C "
-        "89 D5 "
-        "49 8B 11 "
-        "89 F9 "
-        "48 C1 E1 04 "
-        "4C 89 CB "
-        "48 01 D1 "
-        "45 89 C6 "
-        "48 89 D0 "
-        "48 39 CA "
-        "74 ?"
-    );
+    uintptr_t address =
+        PatternScan(
+            "48 89 5C 24 18 "
+            "55 "
+            "57 "
+            "41 56 "
+            "48 83 EC 20 "
+            "41 8B 79 0C "
+            "89 D5 "
+            "49 8B 11 "
+            "89 F9 "
+            "48 C1 E1 04 "
+            "4C 89 CB "
+            "48 01 D1 "
+            "45 89 C6 "
+            "48 89 D0 "
+            "48 39 CA "
+            "74 ?"
+        );
 
 
     if (!address)
@@ -335,13 +629,6 @@ bool HookInventory()
 
         return false;
     }
-
-
-    printf(
-        "[Inventory] Found at %p\n",
-        (void*)address
-    );
-
 
 
     MH_STATUS status =
@@ -363,7 +650,6 @@ bool HookInventory()
     }
 
 
-
     status =
         MH_EnableHook(
             (LPVOID)address
@@ -379,7 +665,6 @@ bool HookInventory()
 
         return false;
     }
-
 
 
     printf(

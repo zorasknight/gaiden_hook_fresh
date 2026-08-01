@@ -32,9 +32,6 @@ bool APState::Load()
 
     if (!file.good())
     {
-        printf(
-            "[AP] No state file found, creating one\n"
-        );
 
         return Save();
     }
@@ -108,14 +105,6 @@ bool APState::Load()
     }
 
 
-
-    printf(
-        "[AP] Loaded state: %zu locations, %zu items\n",
-        queuedLocations.size(),
-        receivedItems.size()
-    );
-
-
     return true;
 }
 
@@ -181,10 +170,6 @@ bool APState::Save()
 
 
 
-    printf(
-        "[AP] Saving state to: %s\n",
-        std::filesystem::absolute(filename).string().c_str()
-    );
 
 
 
@@ -394,42 +379,6 @@ void APState::SetFilename(
 
     std::filesystem::path statePath(filename);
 
-
-    printf(
-        "\n========== AP STATE DEBUG ==========\n"
-    );
-
-
-    printf(
-        "[AP] Relative path: %s\n",
-        filename.c_str()
-    );
-
-
-    printf(
-        "[AP] Absolute path: %s\n",
-        std::filesystem::absolute(statePath).string().c_str()
-    );
-
-
-    if (std::filesystem::exists(statePath))
-    {
-        printf(
-            "[AP] State file exists (%lld bytes)\n",
-            std::filesystem::file_size(statePath)
-        );
-    }
-    else
-    {
-        printf(
-            "[AP] State file does not exist yet\n"
-        );
-    }
-
-
-    printf(
-        "====================================\n\n"
-    );
 }
 
 

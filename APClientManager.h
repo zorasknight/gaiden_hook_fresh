@@ -59,6 +59,7 @@ public:
         const std::string& message
     );
 
+    void SendGoal();
 
 
     //
@@ -125,6 +126,7 @@ private:
     bool inventoryReadyFlag = false;
     bool initialized = false;
     bool connected = false;
+    bool goalSent = false;
 };
 
 

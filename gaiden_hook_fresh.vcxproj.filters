@@ -30,6 +30,9 @@
     <ClInclude Include="patternscan.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="APProgressiveItems.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MinHook\src\buffer.c">
@@ -60,6 +63,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="hooks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="APProgressiveItems.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -392,11 +392,6 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     MH_STATUS status = MH_Initialize();
 
 
-    printf(
-        "MinHook status: %d\n",
-        status
-    );
-
 
 
     if (status != MH_OK)
@@ -409,21 +404,11 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     }
 
 
-
-    printf(
-        "[YakLadGai] MinHook initialized\n"
-    );
-
-
-
     // =========================
     // Load AP database
     // =========================
 
 
-    printf(
-        "[AP] Loading item database...\n"
-    );
 
 
     if (!g_APItems.Load(
@@ -434,12 +419,21 @@ DWORD WINAPI MainThread(LPVOID lpParam)
             "[AP] Item database failed to load\n"
         );
     }
-    else
+
+    // =========================
+    // Load progressive item database
+    // =========================
+
+
+    if (!LoadProgressiveItems(
+        "mods/Gaiden_Rando/progressive_items.json"
+    ))
     {
         printf(
-            "[AP] Item database loaded\n"
+            "[AP] Progressive item database failed to load\n"
         );
     }
+
 
 
 
@@ -454,12 +448,6 @@ DWORD WINAPI MainThread(LPVOID lpParam)
             "[YakLadGai] Inventory hook failed\n"
         );
     }
-    else
-    {
-        printf(
-            "[YakLadGai] Inventory hook installed\n"
-        );
-    }
 
 
     fflush(stdout);
@@ -469,7 +457,6 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     g_AP.Initialize(
         "mods/Gaiden_Rando/APState.json"
     );
-
 
 
     HANDLE consoleThread = CreateThread(

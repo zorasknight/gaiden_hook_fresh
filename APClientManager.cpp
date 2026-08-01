@@ -95,18 +95,13 @@ bool APClientManager::Initialize(
             host.c_str(),
             port
         );
+        
+        pendingSlot = slot;
+        pendingPassword = password;
+
+        Connect(host, port);
 
 
-        if (Connect(host, port))
-        {
-            if (!slot.empty())
-            {
-                ConnectSlot(
-                    slot,
-                    password
-                );
-            }
-        }
     }
 
     return true;
@@ -192,11 +187,20 @@ bool APClientManager::Connect(
             {
                 connectAttempts = 0;
 
-                printf(
-                    "[AP] Socket connected\n"
-                );
-            }
-        );
+                printf("[AP] Socket connected\n");
+
+                if (!pendingSlot.empty())
+                {
+                    printf("[AP] Auto-connecting slot %s\n",
+                        pendingSlot.c_str());
+
+                    client->ConnectSlot(
+                        pendingSlot,
+                        pendingPassword,
+                        3
+                    );
+                }
+            });
 
 
         client->set_socket_error_handler(
@@ -260,19 +264,10 @@ bool APClientManager::Connect(
         client->set_location_checked_handler(
             [this](const std::list<int64_t>& locations)
             {
-                printf(
-                    "[AP] Location confirmation received\n"
-                );
 
 
                 for (auto location : locations)
                 {
-                    printf(
-                        "[AP] Location acknowledged: %lld\n",
-                        location
-                    );
-
-
                     state.MarkLocationAcknowledged(
                         location
                     );
@@ -299,9 +294,6 @@ bool APClientManager::Connect(
                 //
                 // Flush pending location checks
                 //
-                printf(
-                    "[AP] Flushing pending location checks...\n"
-                );
 
 
                 for (auto& location :
@@ -310,10 +302,6 @@ bool APClientManager::Connect(
                     if (location.queued &&
                         !location.acknowledged)
                     {
-                        printf(
-                            "[AP] Resending location check: %lld\n",
-                            location.location_id
-                        );
 
 
                         client->LocationChecks(
@@ -375,10 +363,6 @@ bool APClientManager::Connect(
 
                 state.Save();
 
-
-                printf(
-                    "[AP] Connection flush complete\n"
-                );
             }
         );
 
@@ -407,25 +391,10 @@ bool APClientManager::Connect(
         client->set_items_received_handler(
             [this](const auto& items)
             {
-                printf(
-                    "\n[AP] ReceivedItems callback fired!\n"
-                );
-
-
-                printf(
-                    "Count: %zu\n",
-                    items.size()
-                );
 
 
                 for (const auto& item : items)
                 {
-                    printf(
-                        "[AP] Item %lld Index %d Location %lld\n",
-                        item.item,
-                        item.index,
-                        item.location
-                    );
 
 
                     state.QueueReceivedItem(
@@ -438,10 +407,6 @@ bool APClientManager::Connect(
                     if (inventoryReadyFlag &&
                         !state.IsItemDelivered(item.index))
                     {
-                        printf(
-                            "[AP] Delivering item immediately: %lld\n",
-                            item.item
-                        );
 
 
                         ReceiveItem(
@@ -451,12 +416,6 @@ bool APClientManager::Connect(
 
                         state.MarkItemDelivered(
                             item.index
-                        );
-                    }
-                    else
-                    {
-                        printf(
-                            "[AP] Item queued\n"
                         );
                     }
                 }
@@ -579,11 +538,6 @@ void APClientManager::InventoryReady()
     inventoryReadyFlag = true;
 
 
-    printf(
-        "[AP] Inventory ready, checking queued items\n"
-    );
-
-
     for (auto& item :
         state.GetReceivedItems())
     {
@@ -626,6 +580,51 @@ void APClientManager::Say(
     );
 }
 
+void APClientManager::SendGoal()
+{
+    if (!client)
+    {
+        printf(
+            "[AP] Cannot send goal - no client\n"
+        );
+
+        return;
+    }
+
+
+    if (!connected)
+    {
+        printf(
+            "[AP] Cannot send goal - not connected\n"
+        );
+
+        return;
+    }
+
+
+    if (goalSent)
+    {
+        printf(
+            "[AP] Goal already sent\n"
+        );
+
+        return;
+    }
+
+
+    printf(
+        "[AP] Sending goal completion!\n"
+    );
+
+
+    client->StatusUpdate(
+        APClient::ClientStatus::GOAL
+    );
+
+
+    goalSent = true;
+}
+
 
 
 void APClientManager::CheckLocation(
@@ -659,11 +658,6 @@ void APClientManager::CheckLocation(
         return;
     }
 
-
-
-    printf(
-        "[AP] Sending location check immediately\n"
-    );
 
 
     client->LocationChecks(

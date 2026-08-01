@@ -12,10 +12,6 @@ bool APItemDatabase::Load(
     const std::string& path
 )
 {
-    printf(
-        "[AP] Opening CSV: %s\n",
-        path.c_str()
-    );
 
 
     std::ifstream file(path);
@@ -31,10 +27,6 @@ bool APItemDatabase::Load(
     }
 
 
-    printf(
-        "[AP] CSV opened\n"
-    );
-
 
     std::string line;
 
@@ -42,10 +34,7 @@ bool APItemDatabase::Load(
     // skip header
     if (std::getline(file, line))
     {
-        printf(
-            "[AP] Header: %s\n",
-            line.c_str()
-        );
+
     }
 
 
@@ -85,27 +74,9 @@ bool APItemDatabase::Load(
 
         int64_t gameID = std::stoll(key);
 
-        printf(
-            "[AP CSV] Game Item %lld -> Location %lld\n",
-            gameID,
-            entry.location_id
-        );
-
         items[gameID] = entry;
-
-
-        printf(
-            "[AP] Loaded %s -> location %s\n",
-            key.c_str(),
-            location.c_str()
-        );
     }
 
-
-    printf(
-        "[AP] Total mappings: %zu\n",
-        items.size()
-    );
 
 
     return true;
@@ -118,10 +89,6 @@ bool APItemDatabase::GetItem(
     APItemEntry& out
 )
 {
-    printf(
-        "[AP] Looking for item %lld\n",
-        game_item_id
-    );
 
 
     auto it = items.find(game_item_id);
@@ -129,10 +96,6 @@ bool APItemDatabase::GetItem(
 
     if (it == items.end())
     {
-        printf(
-            "[AP] No mapping for item %lld\n",
-            game_item_id
-        );
 
         return false;
     }
