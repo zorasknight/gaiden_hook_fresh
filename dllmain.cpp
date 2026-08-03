@@ -15,7 +15,7 @@
 
 #include "MinHook.h"
 
-
+DWORD lastProgressCheck = 0;
 
 HMODULE g_Module = nullptr;
 
@@ -27,7 +27,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
     char arg2[256] = {};
 
     printf("\nConsole ready.\n");
-    printf("Waiting for player inventory...\n\n");
+    printf("Waiting for player inventory... Interact with any item within the game to continue\n\n");
 
 
     while (true)
@@ -272,11 +272,6 @@ DWORD WINAPI ConsoleThread(LPVOID)
             sscanf_s(command, "ap give %d", &itemID) == 1
             )
         {
-            printf(
-                "[AP] Giving item %d\n",
-                itemID
-            );
-
 
             GiveAPItem(itemID);
         }
@@ -381,7 +376,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 
 
     printf(
-        "[YakLadGai] DLL loaded\n"
+        "[YakLadGai] Archipelago DLL now loaded\n"
     );
 
 
@@ -477,12 +472,19 @@ DWORD WINAPI MainThread(LPVOID lpParam)
             "Failed to start console thread.\n"
         );
 
-
+    DWORD lastProgressSync = GetTickCount();
 
     while (true)
     {
         g_AP.Update();
         Sleep(16);
+
+        if (GetTickCount() - lastProgressCheck >= 30000)
+        {
+            g_AP.CheckAPProgress();
+
+            lastProgressCheck = GetTickCount();
+        }
     }
 
 

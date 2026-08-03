@@ -17,6 +17,8 @@
 
 constexpr int GOLD_BALL_ID = 6056;
 
+constexpr int AP_PROGRESS_ID = 6285;
+
 bool g_goalSent = false;
 
 using json = nlohmann::json;
@@ -205,6 +207,16 @@ void DumpInventory()
     printf(
         "====================================\n\n"
     );
+}
+
+int GetAPProgress()
+{
+    return GetItemAmount(AP_PROGRESS_ID);
+}
+
+void SetAPProgress(int nextIndex)
+{
+    SetItemAmount(AP_PROGRESS_ID, nextIndex);
 }
 
 
@@ -555,11 +567,13 @@ uint64_t hooked_inventory(
         }
     }
 
-    printf(
-        "Gained Item ID: %d\n",
-        itemID
-    );
-
+    if (itemID >= 100)
+    {
+        printf(
+            "Gained Item ID: %d\n",
+            itemID
+        );
+    }
 
     uint64_t result = original_inventory(
         param1,

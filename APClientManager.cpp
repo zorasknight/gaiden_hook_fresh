@@ -9,6 +9,8 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 
+#include "APItemNames.h"
+
 APClientManager g_AP;
 static const char* AP_CONFIG =
 "mods/Gaiden_Rando/APConfig.json";
@@ -21,8 +23,6 @@ bool SaveAPConfig(
     const std::string& slot,
     const std::string& password
 );
-
-
 
 bool LoadAPConfig(
     std::string& host,
@@ -73,6 +73,10 @@ bool APClientManager::Initialize(
     state.SetFilename(statePath);
 
     state.Load();
+
+    g_APItemNames.Load(
+        "mods/Gaiden_Rando/items.json"
+    );
 
     initialized = true;
 
@@ -332,24 +336,16 @@ bool APClientManager::Connect(
                     for (auto& item :
                         state.GetReceivedItems())
                     {
-                        if (item.queued &&
-                            !item.delivered)
-                        {
-                            printf(
-                                "[AP] Delivering queued item after reconnect: %lld\n",
-                                item.item_id
-                            );
-
-
-                            ReceiveItem(
-                                item.item_id
-                            );
-
-
-                            state.MarkItemDelivered(
-                                item.index
-                            );
-                        }
+                        
+                        printf(
+                            "[AP] Delivering queued item after reconnect: %lld\n",
+                            item.item_id,
+                            g_APItemNames.GetName(item.item_id).c_str()
+                        );
+                        ReceiveItem(
+                            item.item_id,
+                            item.index
+                        );
                     }
                 }
                 else
@@ -404,19 +400,15 @@ bool APClientManager::Connect(
                     );
 
 
-                    if (inventoryReadyFlag &&
-                        !state.IsItemDelivered(item.index))
+                    if (inventoryReadyFlag)
                     {
 
 
                         ReceiveItem(
-                            item.item
-                        );
-
-
-                        state.MarkItemDelivered(
+                            item.item,
                             item.index
                         );
+
                     }
                 }
 
@@ -439,7 +431,22 @@ bool APClientManager::Connect(
     }
 }
 
+constexpr int AP_PROGRESS_ITEM = 6285;
 
+int APClientManager::GetAPProgress()
+{
+    if (!inventoryReadyFlag)
+        return 0;
+
+    int progress = GetItemAmount(AP_PROGRESS_ITEM);
+
+    return progress;
+}
+
+void APClientManager::SetAPProgress(int progress)
+{
+    SetItemAmount(AP_PROGRESS_ITEM, progress);
+}
 
 bool APClientManager::ConnectSlot(
     const std::string& slot,
@@ -515,20 +522,91 @@ void APClientManager::Update()
 }
 
 
+void APClientManager::CheckAPProgress()
+{
+    if (!inventoryReadyFlag)
+        return;
+
+
+    int gameProgress = GetAPProgress();
+
+
+    int highestKnownIndex = -1;
+
+
+    for (auto& item : state.GetReceivedItems())
+    {
+        if (item.index > highestKnownIndex)
+        {
+            highestKnownIndex = item.index;
+        }
+    }
+
+
+    //
+    // Game is behind AP state.
+    // Replay missing items.
+    //
+    for (auto& item : state.GetReceivedItems())
+    {
+        //
+        // Archipelago indexes are zero based,
+        // so progress represents "next item to process"
+        //
+        if (item.index >= gameProgress)
+        {
+            printf(
+                "[AP] Replaying missing item %lld (index %d)\n",
+                g_APItemNames.GetName(item.item_id).c_str(),
+                item.item_id,
+                item.index
+            );
+
+
+            GiveAPItem(
+                item.item_id
+            );
+
+
+            SetAPProgress(
+                item.index + 1
+            );
+        }
+    }
+}
+
 
 void APClientManager::ReceiveItem(
-    int64_t item_id
+    int64_t item_id,
+    int index
 )
 {
+    int progress = GetAPProgress();
+
+    if (index < progress)
+    {
+        printf(
+            "[AP] Skipping item index %d (already processed)\n",
+            index
+        );
+        return;
+    }
+
     printf(
-        "[AP] Injecting item: %lld\n",
-        item_id
+        "[AP] Giving %s (%lld) (index %d)\n",
+        g_APItemNames.GetName(item_id).c_str(),
+        item_id,
+        index
     );
 
+    GiveAPItem(item_id);
 
-    GiveAPItem(
-        item_id
-    );
+    if (index + 1 > progress)
+    {
+        SetAPProgress(index + 1);
+    }
+    
+    state.Save();
 }
 
 
@@ -537,31 +615,13 @@ void APClientManager::InventoryReady()
 {
     inventoryReadyFlag = true;
 
-
-    for (auto& item :
-        state.GetReceivedItems())
+    for (auto& item : state.GetReceivedItems())
     {
-        if (item.queued &&
-            !item.delivered)
-        {
-            printf(
-                "[AP] Giving queued item: %lld\n",
-                item.item_id
-            );
-
-
-            ReceiveItem(
-                item.item_id
-            );
-
-
-            state.MarkItemDelivered(
-                item.index
-            );
-        }
+        ReceiveItem(
+            item.item_id,
+            item.index
+        );
     }
-
-
     state.Save();
 }
 
@@ -631,10 +691,6 @@ void APClientManager::CheckLocation(
     int64_t location
 )
 {
-    printf(
-        "[AP] Queueing location check: %lld\n",
-        location
-    );
 
 
     //

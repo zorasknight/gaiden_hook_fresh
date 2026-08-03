@@ -36,11 +36,11 @@ public:
     bool Initialize(
         const std::string& statePath
     );
-
+    
 
     void Update();
 
-
+    void CheckAPProgress();
 
     bool Connect(
         const std::string& host,
@@ -78,9 +78,15 @@ public:
     // Incoming items
     //
     void ReceiveItem(
-        int64_t item_id
+        int64_t item_id,
+        int index
     );
 
+    int GetAPProgress();
+
+    void SetAPProgress(
+        int progress
+    );
 
     void FlushItemQueue();
 

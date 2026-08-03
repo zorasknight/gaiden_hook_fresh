@@ -33,6 +33,9 @@
     <ClInclude Include="APProgressiveItems.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="APItemNames.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MinHook\src\buffer.c">
@@ -66,6 +69,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="APProgressiveItems.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="APItemNames.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
