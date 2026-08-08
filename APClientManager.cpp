@@ -2,7 +2,7 @@
 
 #include "APItemDatabase.h"
 #include "hooks.h"
-
+#include "APOptions.h"
 #include <cstdio>
 #include <climits>
 
@@ -10,11 +10,11 @@
 #include <nlohmann/json.hpp>
 
 #include "APItemNames.h"
-
+#include "APLocationNames.h"
+#include "APProgressiveItems.h"
 APClientManager g_AP;
 static const char* AP_CONFIG =
 "mods/Gaiden_Rando/APConfig.json";
-
 
 
 bool SaveAPConfig(
@@ -77,6 +77,18 @@ bool APClientManager::Initialize(
     g_APItemNames.Load(
         "mods/Gaiden_Rando/items.json"
     );
+
+
+    g_APLocationNames.Load(
+        "mods/Gaiden_Rando/locations.json"
+    );
+
+    g_APOptions.Load(
+        "mods/Gaiden_Rando/options.json"
+    );
+
+
+    g_APProgressiveItems.Load();
 
     initialized = true;
 
@@ -141,8 +153,6 @@ bool SaveAPConfig(
     }
     return false;
 }
-
-
 
 
 
@@ -268,15 +278,18 @@ bool APClientManager::Connect(
         client->set_location_checked_handler(
             [this](const std::list<int64_t>& locations)
             {
-
-
                 for (auto location : locations)
                 {
+                    printf(
+                        "[AP] Location acknowledged: %s (%lld)\n",
+                        g_APLocationNames.GetName(location).c_str(),
+                        location
+                    );
+
                     state.MarkLocationAcknowledged(
                         location
                     );
                 }
-
 
                 state.Save();
             }
@@ -338,9 +351,9 @@ bool APClientManager::Connect(
                     {
                         
                         printf(
-                            "[AP] Delivering queued item after reconnect: %lld\n",
-                            item.item_id,
-                            g_APItemNames.GetName(item.item_id).c_str()
+                            "[AP] Delivering queued item after reconnect: %s (%lld)\n",
+                            g_APItemNames.GetName(item.item_id).c_str(),
+                            item.item_id
                         );
                         ReceiveItem(
                             item.item_id,
@@ -556,7 +569,7 @@ void APClientManager::CheckAPProgress()
         if (item.index >= gameProgress)
         {
             printf(
-                "[AP] Replaying missing item %lld (index %d)\n",
+                "[AP] Replaying missing item %s (%lld) (index %d)\n",
                 g_APItemNames.GetName(item.item_id).c_str(),
                 item.item_id,
                 item.index
@@ -571,6 +584,7 @@ void APClientManager::CheckAPProgress()
             SetAPProgress(
                 item.index + 1
             );
+            
         }
     }
 }
@@ -593,10 +607,9 @@ void APClientManager::ReceiveItem(
     }
 
     printf(
-        "[AP] Giving %s (%lld) (index %d)\n",
+        "[AP] Giving %s (%lld)\n",
         g_APItemNames.GetName(item_id).c_str(),
-        item_id,
-        index
+        item_id
     );
 
     GiveAPItem(item_id);
@@ -605,10 +618,9 @@ void APClientManager::ReceiveItem(
     {
         SetAPProgress(index + 1);
     }
-    
+
     state.Save();
 }
-
 
 
 void APClientManager::InventoryReady()
@@ -693,9 +705,12 @@ void APClientManager::CheckLocation(
 {
 
 
-    //
-    // Always save locally first
-    //
+    printf(
+        "[AP] Checking location %s (%lld)\n",
+        g_APLocationNames.GetName(location).c_str(),
+        location
+    );
+
     state.QueueLocation(
         location
     );

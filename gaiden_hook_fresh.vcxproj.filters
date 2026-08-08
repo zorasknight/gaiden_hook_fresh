@@ -36,6 +36,12 @@
     <ClInclude Include="APItemNames.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="APLocationNames.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="APOptions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MinHook\src\buffer.c">
@@ -72,6 +78,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="APItemNames.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="APLocationNames.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="APOptions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

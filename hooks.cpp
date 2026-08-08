@@ -2,12 +2,12 @@
 
 #include "patternscan.h"
 #include "MinHook.h"
-
+#include "APItemNames.h"
 #include <stdio.h>
-
+#include "APProgressiveItems.h"
 #include "APItemDatabase.h"
 #include "APClientManager.h"
-
+#include "APOptions.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <filesystem>
@@ -30,19 +30,6 @@ uint64_t g_inventoryPtr = 0;
 uint64_t g_param1 = 0;
 
 
-// =====================================================
-// Progressive item data
-// =====================================================
-
-struct ProgressiveItem
-{
-    std::string name;
-    std::vector<int> levels;
-};
-
-
-std::unordered_map<int, ProgressiveItem> g_progressiveItems;
-
 
 // =====================================================
 // Inventory state
@@ -53,83 +40,6 @@ bool IsInventoryReady()
     return g_inventoryPtr != 0;
 }
 
-
-// =====================================================
-// Progressive item database
-// =====================================================
-
-bool LoadProgressiveItems(const std::string& path)
-{
-    std::ifstream file(path);
-
-    if (!file.is_open())
-    {
-        printf(
-            "[AP] Failed to open progressive_items.json: %s\n",
-            path.c_str()
-        );
-
-        return false;
-    }
-
-
-    try
-    {
-        json data;
-
-        file >> data;
-
-        g_progressiveItems.clear();
-
-
-        for (auto& [idString, value] : data.items())
-        {
-            int progressiveID = std::stoi(idString);
-
-            ProgressiveItem item;
-
-            item.name = value.value(
-                "name",
-                ""
-            );
-
-
-            if (
-                value.contains("levels")
-                && value["levels"].is_array()
-                )
-            {
-                for (const auto& levelID : value["levels"])
-                {
-                    item.levels.push_back(
-                        levelID.get<int>()
-                    );
-                }
-            }
-
-
-            g_progressiveItems[progressiveID] = item;
-
-        }
-
-
-
-        return true;
-    }
-    catch (const std::exception& e)
-    {
-        printf(
-            "[AP] Failed to parse progressive_items.json: %s\n",
-            e.what()
-        );
-
-        return false;
-    }
-}
-
-
-// Forward declaration
-void GiveProgressiveAPItem(int progressiveID);
 
 
 // =====================================================
@@ -256,6 +166,7 @@ int GetItemAmount(int itemID)
     return 0;
 }
 
+void GiveProgressiveAPItem(int progressiveID);
 
 void SetItemAmount(
     int itemID,
@@ -284,13 +195,6 @@ void SetItemAmount(
     }
 
 
-    printf(
-        "[Inventory] Setting item %d to %d\n",
-        itemID,
-        amount
-    );
-
-
     original_inventory(
         g_param1,
         itemID,
@@ -315,10 +219,14 @@ void SetItemAmount(
         );
 
 
-        if (count >= 7)
+        int required =
+            g_APOptions.GetRequiredGoldenBallCount();
+
+        if (count >= required)
         {
             printf(
-                "[AP] 7 Gold Balls collected! Sending goal!\n"
+                "[AP] %d Gold Balls collected! Sending goal!\n",
+                required
             );
 
             g_AP.SendGoal();
@@ -345,40 +253,19 @@ void GiveAPItem(int64_t itemID)
         return;
     }
 
+    int id = static_cast<int>(itemID);
 
-    int id = (int)itemID;
+    const ProgressiveItem* progressive =
+        g_APProgressiveItems.Get(id);
 
-
-    // -------------------------------------------------
-    // Progressive AP item
-    // -------------------------------------------------
-
-    if (
-        g_progressiveItems.find(id)
-        != g_progressiveItems.end()
-        )
+    if (progressive)
     {
         GiveProgressiveAPItem(id);
-
         return;
     }
 
-
-    // -------------------------------------------------
-    // Normal AP item
-    // -------------------------------------------------
-
     int current =
         GetItemAmount(id);
-
-
-    printf(
-        "[AP] Giving item %lld (%d -> %d)\n",
-        itemID,
-        current,
-        current + 1
-    );
-
 
     SetItemAmount(
         id,
@@ -393,14 +280,10 @@ void GiveAPItem(int64_t itemID)
 
 void GiveProgressiveAPItem(int progressiveID)
 {
-    auto it =
-        g_progressiveItems.find(progressiveID);
+    const ProgressiveItem* item =
+        g_APProgressiveItems.Get(progressiveID);
 
-
-    if (
-        it
-        == g_progressiveItems.end()
-        )
+    if (!item)
     {
         printf(
             "[AP] Progressive item %d not found in database\n",
@@ -410,83 +293,32 @@ void GiveProgressiveAPItem(int progressiveID)
         return;
     }
 
-
-    const ProgressiveItem& item =
-        it->second;
-
-
-    // -------------------------------------------------
-    // How many copies of the AP progressive item
-    // have we already received?
-    // -------------------------------------------------
-
     int current =
         GetItemAmount(progressiveID);
-
 
     int nextCount =
         current + 1;
 
-
-    // -------------------------------------------------
-    // Prevent going beyond the final level
-    // -------------------------------------------------
-
-    if (
-        nextCount
-    > (int)item.levels.size()
-        )
+    if (nextCount > static_cast<int>(item->levels.size()))
     {
         printf(
             "[AP] %s already at max level (%d)\n",
-            item.name.c_str(),
-            (int)item.levels.size()
+            item->name.c_str(),
+            static_cast<int>(item->levels.size())
         );
 
         return;
     }
 
-
-    // -------------------------------------------------
-    // Select the corresponding actual game item
-    //
-    // First AP copy:
-    // levels[0]
-    //
-    // Second AP copy:
-    // levels[1]
-    //
-    // etc.
-    // -------------------------------------------------
-
     int levelID =
-        item.levels[nextCount - 1];
+        item->levels[nextCount - 1];
 
-
-    printf(
-        "[AP] Giving %s level %d -> game item %d\n",
-        item.name.c_str(),
-        nextCount,
-        levelID
-    );
-
-
-    // -------------------------------------------------
-    // Track how many progressive AP items we've
-    // received.
-    // -------------------------------------------------
+    printf("[AP] Giving %s level %d -> %s (%d)\n", item->name.c_str(), nextCount, g_APItemNames.GetName(levelID).c_str(), levelID);
 
     SetItemAmount(
         progressiveID,
         nextCount
     );
-
-
-    // -------------------------------------------------
-    // Give the corresponding actual skill book.
-    //
-    // We intentionally DO NOT remove previous books.
-    // -------------------------------------------------
 
     SetItemAmount(
         levelID,
@@ -554,25 +386,12 @@ uint64_t hooked_inventory(
             )
             )
         {
-            printf(
-                "[AP] Checking location %lld from item %d\n",
-                entry.location_id,
-                itemID
-            );
 
 
             g_AP.CheckLocation(
                 entry.location_id
             );
         }
-    }
-
-    if (itemID >= 100)
-    {
-        printf(
-            "Gained Item ID: %d\n",
-            itemID
-        );
     }
 
     uint64_t result = original_inventory(
@@ -583,6 +402,53 @@ uint64_t hooked_inventory(
         mode
     );
 
+    // =====================================================
+    // Progressive location check
+    //
+    // The original inventory function has now completed,
+    // so the inventory contains the newly acquired item.
+    // The current total determines which progressive
+    // location check this acquisition represents.
+    // =====================================================
+
+    if (amount > 0)
+    {
+        const ProgressiveItem* progressive =
+            g_APProgressiveItems.Get(itemID);
+
+        if (
+            progressive &&
+            !progressive->checks.empty()
+            )
+        {
+            int currentAmount =
+                GetItemAmount(itemID);
+
+            int checkIndex =
+                currentAmount - 1;
+
+            if (
+                checkIndex >= 0 &&
+                checkIndex <
+                static_cast<int>(progressive->checks.size())
+                )
+            {
+                int64_t location =
+                    progressive->checks[checkIndex];
+
+                g_AP.CheckLocation(location);
+            }
+            else
+            {
+                printf(
+                    "[AP] Progressive %s acquired #%d, but no check exists for this count\n",
+                    progressive->name.c_str(),
+                    currentAmount
+                );
+            }
+        }
+    }
+
     // Goal check after inventory has actually updated
     if (
         itemID == GOLD_BALL_ID &&
@@ -592,9 +458,15 @@ uint64_t hooked_inventory(
     {
         int count = GetItemAmount(GOLD_BALL_ID);
 
-        if (count >= 7)
+        int required =
+            g_APOptions.GetRequiredGoldenBallCount();
+
+        if (count >= required)
         {
-            printf("[AP] 7 Gold Balls collected! Sending goal!\n");
+            printf(
+                "[AP] %d Gold Balls collected! Sending goal!\n",
+                required
+            );
 
             g_AP.SendGoal();
 

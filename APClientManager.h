@@ -1,6 +1,7 @@
 #pragma once
 
 #include "APState.h"
+#include "APProgressiveItems.h"
 
 #include <string>
 #include <memory>
@@ -8,6 +9,7 @@
 
 #include "apclient.hpp"
 
+extern APProgressiveItems g_APProgressiveItems;
 
 //
 // AP connection config
@@ -19,15 +21,12 @@ bool SaveAPConfig(
     const std::string& password
 );
 
-
 bool LoadAPConfig(
     std::string& host,
     int& port,
     std::string& slot,
     std::string& password
 );
-
-
 
 class APClientManager
 {
@@ -36,31 +35,27 @@ public:
     bool Initialize(
         const std::string& statePath
     );
-    
 
     void Update();
 
     void CheckAPProgress();
+
 
     bool Connect(
         const std::string& host,
         int port
     );
 
-
     bool ConnectSlot(
         const std::string& slot,
         const std::string& password
     );
-
-
 
     void Say(
         const std::string& message
     );
 
     void SendGoal();
-
 
     //
     // Location sending
@@ -69,10 +64,7 @@ public:
         int64_t location
     );
 
-
     void FlushLocationQueue();
-
-
 
     //
     // Incoming items
@@ -90,22 +82,17 @@ public:
 
     void FlushItemQueue();
 
-
-
     //
     // Inventory
     //
     void InventoryReady();
 
-
-
     bool IsConnected();
-
-
 
 private:
 
     std::unique_ptr<APClient> client;
+
     int connectAttempts = 0;
     static constexpr int MAX_CONNECT_ATTEMPTS = 3;
 
@@ -118,13 +105,10 @@ private:
     std::string lastHost;
     int lastPort = 0;
 
-
     //
     // Persistent state
     //
     APState state;
-
-
 
     //
     // Runtime flags
@@ -134,7 +118,5 @@ private:
     bool connected = false;
     bool goalSent = false;
 };
-
-
 
 extern APClientManager g_AP;

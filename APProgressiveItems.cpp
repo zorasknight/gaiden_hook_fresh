@@ -52,11 +52,24 @@ bool APProgressiveItems::Load()
                     ""
                 );
 
-            for (const auto& level : value["levels"])
+            if (value.contains("levels"))
             {
-                item.levels.push_back(
-                    level.get<int>()
-                );
+                for (const auto& level : value["levels"])
+                {
+                    item.levels.push_back(
+                        level.get<int>()
+                    );
+                }
+            }
+
+            if (value.contains("checks"))
+            {
+                for (const auto& check : value["checks"])
+                {
+                    item.checks.push_back(
+                        check.get<int64_t>()
+                    );
+                }
             }
 
             items[progressiveID] =
@@ -80,12 +93,47 @@ bool APProgressiveItems::Load()
 
 
 const ProgressiveItem*
-APProgressiveItems::Get(int itemID) const
+APProgressiveItems::FindByLevel(
+    int levelID,
+    int& levelIndex
+) const
 {
-    auto it = items.find(itemID);
+    levelIndex = -1;
+
+    for (const auto& [progressiveID, item] : items)
+    {
+        for (
+            int i = 0;
+            i < static_cast<int>(item.levels.size());
+            i++
+            )
+        {
+            if (item.levels[i] == levelID)
+            {
+                levelIndex = i;
+
+                return &item;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+
+const ProgressiveItem*
+APProgressiveItems::Get(
+    int itemID
+) const
+{
+    auto it =
+        items.find(itemID);
 
     if (it == items.end())
         return nullptr;
 
     return &it->second;
 }
+
+
+APProgressiveItems g_APProgressiveItems;

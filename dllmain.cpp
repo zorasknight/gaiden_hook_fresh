@@ -420,9 +420,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     // =========================
 
 
-    if (!LoadProgressiveItems(
-        "mods/Gaiden_Rando/progressive_items.json"
-    ))
+    if (!g_APProgressiveItems.Load())
     {
         printf(
             "[AP] Progressive item database failed to load\n"

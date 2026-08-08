@@ -175,6 +175,8 @@ $(ProjectDir)External\asio\include;</AdditionalIncludeDirectories>
     <ClInclude Include="APClientManager.h" />
     <ClInclude Include="APItemDatabase.h" />
     <ClInclude Include="APItemNames.h" />
+    <ClInclude Include="APLocationNames.h" />
+    <ClInclude Include="APOptions.h" />
     <ClInclude Include="APProgressiveItems.h" />
     <ClInclude Include="APState.h" />
     <ClInclude Include="hooks.h" />
@@ -184,6 +186,8 @@ $(ProjectDir)External\asio\include;</AdditionalIncludeDirectories>
     <ClCompile Include="APClientManager.cpp" />
     <ClCompile Include="APItemDatabase.cpp" />
     <ClCompile Include="APItemNames.cpp" />
+    <ClCompile Include="APLocationNames.cpp" />
+    <ClCompile Include="APOptions.cpp" />
     <ClCompile Include="APProgressiveItems.cpp" />
     <ClCompile Include="APState.cpp" />
     <ClCompile Include="dllmain.cpp" />

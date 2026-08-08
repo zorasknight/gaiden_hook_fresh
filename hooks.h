@@ -27,10 +27,6 @@ void GiveAPItem(
     int64_t itemID
 );
 
-bool LoadProgressiveItems(
-    const std::string& path
-);
-
 bool IsInventoryReady();
 
 bool HookInventory();
