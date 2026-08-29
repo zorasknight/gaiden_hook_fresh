@@ -26,6 +26,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
     char arg1[256] = {};
     char arg2[256] = {};
 
+
     printf("\nConsole ready.\n");
     printf("Waiting for player inventory... Interact with any item within the game to continue\n\n");
 
@@ -45,6 +46,10 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
         int itemID;
         int amount;
+
+        int timelineCategory;
+        int timelineMission;
+        int timelineState;
 
 
         if (sscanf_s(command, "set %d %d", &itemID, &amount) == 2)
@@ -114,6 +119,30 @@ DWORD WINAPI ConsoleThread(LPVOID)
                 "Item %d quantity: %d\n",
                 itemID,
                 GetItemAmount(itemID)
+            );
+        }
+
+        else if (
+            sscanf_s(
+                command,
+                "timeline %d %d %d",
+                &timelineCategory,
+                &timelineMission,
+                &timelineState
+            ) == 3
+            )
+        {
+            printf(
+                "[Timeline] Setting %d/%d/%d\n",
+                timelineCategory,
+                timelineMission,
+                timelineState
+            );
+
+            SetTimelineState(
+                timelineCategory,
+                timelineMission,
+                timelineState
             );
         }
 
@@ -309,6 +338,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             printf("ap slot <slot> [password]\n");
             printf("ap say <message>\n");
             printf("ap check <locationID>\n\n");
+            printf("timeline <category> <mission> <state>\n");
         }
 
 
@@ -439,6 +469,12 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     {
         printf(
             "[YakLadGai] Inventory hook failed\n"
+        );
+    }
+    if (!HookTaskTable())
+    {
+        printf(
+            "[YakLadGai] Task hook failed\n"
         );
     }
 

@@ -8,12 +8,6 @@
 #include "APItemDatabase.h"
 #include "APClientManager.h"
 #include "APOptions.h"
-#include <nlohmann/json.hpp>
-#include <fstream>
-#include <filesystem>
-#include <unordered_map>
-#include <vector>
-#include <string>
 
 constexpr int GOLD_BALL_ID = 6056;
 
@@ -23,13 +17,183 @@ bool g_goalSent = false;
 
 using json = nlohmann::json;
 
+using potentially_set_tasks_t =
+uint64_t(*)(uint64_t, uint32_t, uint32_t, uint32_t, uint8_t, uint8_t);
+
+potentially_set_tasks_t original_potentially_set_tasks = nullptr;
 
 inventory_set_quantity_t original_inventory = nullptr;
 
 uint64_t g_inventoryPtr = 0;
 uint64_t g_param1 = 0;
+uint64_t g_timelineParam1 = 0;
+
+struct TaskState
+{
+    uint32_t p4;
+    uint8_t p5;
+    uint8_t p6;
+    bool valid;
+};
+
+TaskState g_taskStates[16] = {};
 
 
+
+uint64_t hooked_potentially_set_tasks(
+    uint64_t param1,
+    uint32_t param2,
+    uint32_t param3,
+    uint32_t param4,
+    uint8_t param5,
+    uint8_t param6
+)
+{
+    g_timelineParam1 = param1;
+
+    uint64_t result =
+        original_potentially_set_tasks(
+            param1,
+            param2,
+            param3,
+            param4,
+            param5,
+            param6
+        );
+
+    g_AP.QueueGameAction(
+        {
+            GameActionType::TimelineEvent,
+            0,
+            -1,
+            param2,
+            param3,
+            param4,
+            param5,
+            param6
+        }
+    );
+
+    return result;
+}
+
+void SetTimelineState(
+    uint32_t category,
+    uint32_t mission,
+    uint32_t state
+)
+{
+    if (!original_potentially_set_tasks)
+    {
+        printf(
+            "[Timeline] Cannot set state - original function not ready\n"
+        );
+
+        return;
+    }
+
+    if (!g_timelineParam1)
+    {
+        printf(
+            "[Timeline] Cannot set state - timeline parameter not captured\n"
+        );
+
+        return;
+    }
+
+    original_potentially_set_tasks(
+        g_timelineParam1,
+        category,
+        mission,
+        state,
+        0,
+        0
+    );
+
+    printf(
+        "[Timeline] Set %u/%u/%u\n",
+        category,
+        mission,
+        state
+    );
+}
+
+bool HookTaskTable()
+{
+    uintptr_t address =
+        PatternScan(
+            "48 89 5C 24 08 "
+            "48 89 6C 24 10 "
+            "48 89 74 24 20 "
+            "44 89 44 24 18 "
+            "57 "
+            "41 56 "
+            "41 57 "
+            "48 83 EC 30 "
+            "44 8B 91 CC 00 00 00 "
+            "31 DB "
+            "44 89 CD "
+            "45 89 C7 "
+            "89 D7 "
+            "49 89 CE "
+            "41 89 DB "
+            "45 85 D2 "
+            "7E ?"
+        );
+
+    if (!address)
+    {
+        printf(
+            "[Timeline] Timeline pattern not found\n"
+        );
+
+        return false;
+    }
+
+    printf(
+        "[Timeline] Timeline pattern resolved to 0x%llX\n",
+        address
+    );
+
+    MH_STATUS status =
+        MH_CreateHook(
+            (LPVOID)address,
+            &hooked_potentially_set_tasks,
+            (LPVOID*)&original_potentially_set_tasks
+        );
+
+    if (status != MH_OK)
+    {
+        printf(
+            "[Timeline] CreateHook failed: %d\n",
+            status
+        );
+
+        return false;
+    }
+
+    status =
+        MH_EnableHook(
+            (LPVOID)address
+        );
+
+    if (status != MH_OK)
+    {
+        printf(
+            "[Timeline] EnableHook failed: %d\n",
+            status
+        );
+
+        return false;
+    }
+
+    printf(
+        "[Timeline] Timeline hook enabled at 0x%llX\n",
+        address
+    );
+
+    return true;
+}
 
 // =====================================================
 // Inventory state
@@ -233,6 +397,7 @@ void SetItemAmount(
 
             g_goalSent = true;
         }
+        
     }
 }
 
@@ -456,7 +621,8 @@ uint64_t hooked_inventory(
         IsInventoryReady()
         )
     {
-        int count = GetItemAmount(GOLD_BALL_ID);
+        int count =
+            GetItemAmount(GOLD_BALL_ID);
 
         int required =
             g_APOptions.GetRequiredGoldenBallCount();
@@ -464,11 +630,13 @@ uint64_t hooked_inventory(
         if (count >= required)
         {
             printf(
-                "[AP] %d Gold Balls collected! Sending goal!\n",
+                "[AP] %d Gold Balls collected! Golden Ball wincon complete!\n",
                 required
             );
 
-            g_AP.SendGoal();
+            g_AP.MarkWinconComplete(
+                APWincon::GoldenBall
+            );
 
             g_goalSent = true;
         }

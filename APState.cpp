@@ -25,6 +25,9 @@ bool APState::Load()
 
     queuedLocations.clear();
     receivedItems.clear();
+    goldenBallWincon = false;
+    defeatShishidoWincon = false;
+    defeatPocketCircuitOwnerWincon = false;
 
 
     std::ifstream file(filename);
@@ -105,6 +108,21 @@ bool APState::Load()
     }
 
 
+    if (data.contains("wincons"))
+    {
+        auto& wincons = data["wincons"];
+
+        goldenBallWincon =
+            wincons.value("golden_ball", false);
+
+        defeatShishidoWincon =
+            wincons.value("defeat_shishido", false);
+
+        defeatPocketCircuitOwnerWincon =
+            wincons.value("defeat_pocket_circuit_owner", false);
+    }
+
+
     return true;
 }
 
@@ -129,12 +147,11 @@ bool APState::Save()
     json data;
 
 
-    data["version"] = 2;
+    data["version"] = 7;
 
 
 
-    data["queued_locations"] =
-        json::array();
+    data["queued_locations"] = json::array();
 
 
     for (auto& loc : queuedLocations)
@@ -168,9 +185,12 @@ bool APState::Save()
         );
     }
 
-
-
-
+    data["wincons"] =
+    {
+        {"golden_ball", goldenBallWincon},
+        {"defeat_shishido", defeatShishidoWincon},
+        {"defeat_pocket_circuit_owner", defeatPocketCircuitOwnerWincon}
+    };
 
 
     std::ofstream file(filename);
@@ -382,7 +402,45 @@ void APState::SetFilename(
 }
 
 
+void APState::MarkWinconComplete(
+    APWincon wincon
+)
+{
+    switch (wincon)
+    {
+    case APWincon::GoldenBall:
+        goldenBallWincon = true;
+        break;
 
+    case APWincon::DefeatShishido:
+        defeatShishidoWincon = true;
+        break;
+
+    case APWincon::DefeatPocketCircuitOwner:
+        defeatPocketCircuitOwnerWincon = true;
+        break;
+    }
+}
+
+
+bool APState::IsWinconComplete(
+    APWincon wincon
+) const
+{
+    switch (wincon)
+    {
+    case APWincon::GoldenBall:
+        return goldenBallWincon;
+
+    case APWincon::DefeatShishido:
+        return defeatShishidoWincon;
+
+    case APWincon::DefeatPocketCircuitOwner:
+        return defeatPocketCircuitOwnerWincon;
+    }
+
+    return false;
+}
 
 
 

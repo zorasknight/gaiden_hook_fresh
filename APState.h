@@ -14,6 +14,13 @@ struct APQueuedLocation
     bool acknowledged = false;
 };
 
+enum class APWincon
+{
+    GoldenBall,
+    DefeatShishido,
+    DefeatPocketCircuitOwner
+};
+
 
 struct APReceivedItem
 {
@@ -34,11 +41,9 @@ public:
     bool Save();
 
     void SetFilename(const std::string& path);
+    void MarkWinconComplete(APWincon wincon);
+    bool IsWinconComplete(APWincon wincon) const;
 
-
-    // =========================
-    // Outgoing location queue
-    // =========================
 
     void QueueLocation(int64_t location);
 
@@ -51,10 +56,6 @@ public:
     std::vector<APQueuedLocation>& GetQueuedLocations();
     const std::vector<APQueuedLocation>& GetQueuedLocations() const;
 
-
-    // =========================
-    // Incoming AP item queue
-    // =========================
 
     void QueueReceivedItem(
         int64_t item,
@@ -70,6 +71,9 @@ public:
 
 
 private:
+    bool goldenBallWincon = false;
+    bool defeatShishidoWincon = false;
+    bool defeatPocketCircuitOwnerWincon = false;
 
     std::string filename;
 

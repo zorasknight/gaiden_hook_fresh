@@ -23,6 +23,12 @@ void SetItemAmount(
     int amount
 );
 
+void SetTimelineState(
+    uint32_t category,
+    uint32_t mission,
+    uint32_t state
+);
+
 void GiveAPItem(
     int64_t itemID
 );
@@ -32,3 +38,10 @@ bool IsInventoryReady();
 bool HookInventory();
 
 void DumpInventory();
+
+using find_task_object_t =
+uint64_t(*)(uint64_t param1, uint32_t* param2);
+
+extern find_task_object_t original_find_task_object;
+
+bool HookTaskTable();

@@ -104,12 +104,5 @@ bool APItemDatabase::GetItem(
     out = it->second;
 
 
-    printf(
-        "[AP] Found item %lld -> location %lld\n",
-        game_item_id,
-        out.location_id
-    );
-
-
     return true;
 }
