@@ -25,6 +25,7 @@ bool APState::Load()
 
     queuedLocations.clear();
     receivedItems.clear();
+    hintedLocations.clear();
     goldenBallWincon = false;
     defeatShishidoWincon = false;
     defeatPocketCircuitOwnerWincon = false;
@@ -107,6 +108,16 @@ bool APState::Load()
         }
     }
 
+    if (data.contains("hinted_locations"))
+    {
+        for (auto& location : data["hinted_locations"])
+        {
+            hintedLocations.insert(
+                location.get<int64_t>()
+            );
+        }
+    }
+
 
     if (data.contains("wincons"))
     {
@@ -120,6 +131,27 @@ bool APState::Load()
 
         defeatPocketCircuitOwnerWincon =
             wincons.value("defeat_pocket_circuit_owner", false);
+
+        if (goldenBallWincon)
+        {
+            printf(
+                "[AP] Goal completed: Golden Ball\n"
+            );
+        }
+
+        if (defeatShishidoWincon)
+        {
+            printf(
+                "[AP] Goal completed: Defeat Shishido\n"
+            );
+        }
+
+        if (defeatPocketCircuitOwnerWincon)
+        {
+            printf(
+                "[AP] Goal completed: Defeat Pocket Circuit Owner\n"
+            );
+        }
     }
 
 
@@ -183,6 +215,13 @@ bool APState::Save()
                 {"delivered", item.delivered}
             }
         );
+    }
+
+    data["hinted_locations"] = json::array();
+
+    for (int64_t location : hintedLocations)
+    {
+        data["hinted_locations"].push_back(location);
     }
 
     data["wincons"] =
@@ -387,7 +426,20 @@ void APState::MarkItemDelivered(
 }
 
 
+bool APState::HasLocationHinted(
+    int64_t location
+) const
+{
+    return hintedLocations.find(location) != hintedLocations.end();
+}
 
+
+void APState::MarkLocationHinted(
+    int64_t location
+)
+{
+    hintedLocations.insert(location);
+}
 
 
 void APState::SetFilename(

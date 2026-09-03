@@ -220,6 +220,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
         // Old:
         // ap slot MySlot password
         else if (
+            strncmp(command, "/slot ", 6) == 0 ||
             strncmp(command, "slot ", 5) == 0 ||
             strncmp(command, "ap slot ", 8) == 0
             )

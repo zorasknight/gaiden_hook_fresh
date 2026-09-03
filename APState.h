@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 
 struct APQueuedLocation
@@ -56,6 +57,8 @@ public:
     std::vector<APQueuedLocation>& GetQueuedLocations();
     const std::vector<APQueuedLocation>& GetQueuedLocations() const;
 
+    bool HasLocationHinted(int64_t location) const;
+    void MarkLocationHinted(int64_t location);
 
     void QueueReceivedItem(
         int64_t item,
@@ -79,4 +82,7 @@ private:
 
     std::vector<APQueuedLocation> queuedLocations;
     std::vector<APReceivedItem> receivedItems;
+
+
+    std::unordered_set<int64_t> hintedLocations;
 };

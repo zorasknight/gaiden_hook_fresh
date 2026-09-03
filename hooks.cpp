@@ -8,6 +8,62 @@
 #include "APItemDatabase.h"
 #include "APClientManager.h"
 #include "APOptions.h"
+#include <array>
+#include <unordered_map>
+
+constexpr int DRAG_ON_ID = 4760;
+constexpr int GOLEM_TIGER_ID = 4761;
+constexpr int COOL_STRIKER_ID = 4762;
+constexpr int DEVIL_KILLER_ID = 4763;
+constexpr int KILLER_BEE_ID = 4764;
+constexpr int DRAG_ON_ULTRA_ID = 6003;
+constexpr int GOLEM_JAGUAR_ID = 6004;
+constexpr int ALPHA_COOL_STRIKER_ID = 6005;
+constexpr int SUPER_DEVIL_KILLER_ID = 6006;
+constexpr int BANGIN_KILLER_BEE_ID = 6007;
+
+const std::unordered_map<int, std::array<int64_t, 5>> CAR_LOCATIONS = {
+    {
+        DRAG_ON_ID,
+        { 1246, 1247, 1248, 1249, 1250 }
+    },
+    {
+        GOLEM_TIGER_ID,
+        { 1251, 1252, 1253, 1254, 1255 }
+    },
+    {
+        COOL_STRIKER_ID,
+        { 1256, 1257, 1258, 1259, 1260 }
+    },
+    {
+        DEVIL_KILLER_ID,
+        { 1261, 1262, 1263, 1264, 1265 }
+    },
+    {
+        KILLER_BEE_ID,
+        { 1266, 1267, 1268, 1269, 1270 }
+    },
+    {
+        DRAG_ON_ULTRA_ID,
+        { 1271, 1272, 1273, 1274, 1275 }
+    },
+    {
+        GOLEM_JAGUAR_ID,
+        { 1276, 1277, 1278, 1279, 1280 }
+    },
+    {
+        ALPHA_COOL_STRIKER_ID,
+        { 1281, 1282, 1283, 1284, 1285 }
+    },
+    {
+        SUPER_DEVIL_KILLER_ID,
+        { 1286, 1287, 1288, 1289, 1290 }
+    },
+    {
+        BANGIN_KILLER_BEE_ID,
+        { 1291, 1292, 1293, 1294, 1295 }
+    },
+};
 
 constexpr int GOLD_BALL_ID = 6056;
 
@@ -367,9 +423,33 @@ void SetItemAmount(
         0
     );
 
+
+    // =====================================================
+    // Car item location checks
     //
+    // Each car item checks its five associated locations.
+    // This is NOT progressive.
+    // =====================================================
+
+    if (amount > 0)
+    {
+        auto it = CAR_LOCATIONS.find(itemID);
+
+        if (it != CAR_LOCATIONS.end())
+        {
+            printf(
+                "[AP] Car %d acquired - checking 5 car locations\n",
+                itemID
+            );
+
+            for (int64_t locationID : it->second)
+            {
+                g_AP.CheckLocation(locationID);
+            }
+        }
+    }
+
     // AP-only goal check
-    //
     if (
         itemID == GOLD_BALL_ID &&
         !g_goalSent

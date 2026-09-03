@@ -227,14 +227,27 @@ void APClientManager::ProcessTimelineEvent(
                 event.stateHint == stateValue
                 )
             {
-                printf(
-                    "[AP] Creating hint for location %lld\n",
-                    event.locationID
-                );
+                APItemEntry entry;
 
-                client->CreateHints(
-                    { event.locationID }
-                );
+                if (
+                    g_APItems.GetItem(
+                        event.locationID,
+                        entry
+                    )
+                    )
+                {
+                    printf(
+                        "[AP] Creating hint for location %s (%lld)\n",
+                        g_APLocationNames.GetName(
+                            event.locationID
+                        ).c_str(),
+                        event.locationID
+                    );
+
+                    client->CreateHints(
+                        { event.locationID }
+                    );
+                }
             }
             return;
         }
@@ -416,6 +429,11 @@ bool APClientManager::Connect(
                         3
                     );
                 }
+                else {
+                    printf(
+                        "Please connect to your AP Slot using: slot SlotName\n"
+                    );
+                }
             }
         );
 
@@ -441,7 +459,7 @@ bool APClientManager::Connect(
                 if (connectAttempts >= MAX_CONNECT_ATTEMPTS)
                 {
                     printf(
-                        "[AP] Giving up after %d attempts.\n",
+                        "[AP] Giving up after %d attempts. Please manually connect again with /connect archipelago.gg:PORT\n",
                         MAX_CONNECT_ATTEMPTS
                     );
 
@@ -739,7 +757,7 @@ void APClientManager::APWorkerThread()
                 )
             {
                 printf(
-                    "[AP] Cleaning up failed client\n"
+                    "[AP] Cleaning up failed client, Failed to connect with existing information, please make sure your multiworld page is refreshed and try again.\n"
                 );
 
                 client.reset();
@@ -1224,14 +1242,6 @@ void APClientManager::CheckLocation(
     state.Save();
 
 
-    // =====================================================
-    // Shop hints
-    // =====================================================
-    //
-    // If this location belongs to a shop, find every
-    // location belonging to the same shop and create
-    // hints for them.
-    //
     std::vector<int64_t> shopLocations =
         g_APLocationNames.GetShopLocationsFor(
             location
@@ -1240,18 +1250,28 @@ void APClientManager::CheckLocation(
     if (!shopLocations.empty())
     {
         printf(
-            "[AP] Shop location detected: %s\n",
-            g_APLocationNames.GetName(location).c_str()
+            "[AP] Shop location detected: %s (%lld)\n",
+            g_APLocationNames.GetName(location).c_str(),
+            location
         );
 
         for (int64_t shopLocation : shopLocations)
         {
-            //
-            // Don't bother hinting the location that
-            // was just purchased.
-            //
+
             if (shopLocation == location)
                 continue;
+
+
+            if (state.HasLocationHinted(shopLocation))
+            {
+                printf(
+                    "[AP] Hint already sent for %s (%lld), skipping\n",
+                    g_APLocationNames.GetName(shopLocation).c_str(),
+                    shopLocation
+                );
+
+                continue;
+            }
 
             printf(
                 "[AP] Hinting shop location: %s (%lld)\n",
@@ -1264,6 +1284,10 @@ void APClientManager::CheckLocation(
                     shopLocation
                 }
             );
+
+            state.MarkLocationHinted(shopLocation);
+
+            state.Save();
         }
     }
 }
