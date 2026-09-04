@@ -17,6 +17,7 @@ public:
     bool GetGoldenBallWincon() const;
     bool GetDefeatShishidoWincon() const;
     bool GetDefeatPocketCircuitOwnerWincon() const;
+    bool GetPocketCircuit() const;
 
 private:
 
@@ -26,6 +27,8 @@ private:
     int goldenBallWincon = 0;
     int defeatShishidoWincon = 0;
     int defeatPocketCircuitOwnerWincon = 0;
+
+    int pocketCircuit = 0;
 };
 
 extern APOptions g_APOptions;

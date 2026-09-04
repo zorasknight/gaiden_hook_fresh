@@ -22,6 +22,7 @@ constexpr int ALPHA_COOL_STRIKER_ID = 6005;
 constexpr int SUPER_DEVIL_KILLER_ID = 6006;
 constexpr int BANGIN_KILLER_BEE_ID = 6007;
 
+//Maybe grab these values from the locations.json?
 const std::unordered_map<int, std::array<int64_t, 5>> CAR_LOCATIONS = {
     {
         DRAG_ON_ID,
@@ -251,9 +252,8 @@ bool HookTaskTable()
     return true;
 }
 
-// =====================================================
+
 // Inventory state
-// =====================================================
 
 bool IsInventoryReady()
 {
@@ -262,9 +262,8 @@ bool IsInventoryReady()
 
 
 
-// =====================================================
+
 // Inventory helpers
-// =====================================================
 
 void DumpInventory()
 {
@@ -424,31 +423,28 @@ void SetItemAmount(
     );
 
 
-    // =====================================================
     // Car item location checks
-    //
     // Each car item checks its five associated locations.
-    // This is NOT progressive.
-    // =====================================================
 
-    if (amount > 0)
-    {
-        auto it = CAR_LOCATIONS.find(itemID);
-
-        if (it != CAR_LOCATIONS.end())
+    if (g_APOptions.GetPocketCircuit()){
+        if (amount > 0)
         {
-            printf(
-                "[AP] Car %d acquired - checking 5 car locations\n",
-                itemID
-            );
+            auto it = CAR_LOCATIONS.find(itemID);
 
-            for (int64_t locationID : it->second)
+            if (it != CAR_LOCATIONS.end())
             {
-                g_AP.CheckLocation(locationID);
+                printf(
+                    "[AP] Car %d acquired - checking 5 car locations\n",
+                    itemID
+                );
+
+                for (int64_t locationID : it->second)
+                {
+                    g_AP.CheckLocation(locationID);
+                }
             }
         }
     }
-
     // AP-only goal check
     if (
         itemID == GOLD_BALL_ID &&
@@ -458,7 +454,7 @@ void SetItemAmount(
         int count = GetItemAmount(GOLD_BALL_ID);
 
         printf(
-            "[AP] Gold Ball count after injection: %d\n",
+            "[AP] Gold Ball count after addition: %d\n",
             count
         );
 
@@ -482,9 +478,7 @@ void SetItemAmount(
 }
 
 
-// =====================================================
 // AP item injection
-// =====================================================
 
 void GiveAPItem(int64_t itemID)
 {
@@ -519,9 +513,7 @@ void GiveAPItem(int64_t itemID)
 }
 
 
-// =====================================================
 // Progressive AP item injection
-// =====================================================
 
 void GiveProgressiveAPItem(int progressiveID)
 {
@@ -572,9 +564,7 @@ void GiveProgressiveAPItem(int progressiveID)
 }
 
 
-// =====================================================
 // Inventory hook
-// =====================================================
 
 uint64_t hooked_inventory(
     uint64_t param1,
@@ -584,9 +574,8 @@ uint64_t hooked_inventory(
     int mode
 )
 {
-    //
     // Ignore fake startup calls
-    //
+
     if (
         g_inventoryPtr == 0
         && itemID >= 4000
@@ -615,10 +604,8 @@ uint64_t hooked_inventory(
     }
 
 
-
-    //
     // Game -> AP location checks
-    //
+
     if (amount > 0)
     {
         APItemEntry entry;
@@ -647,14 +634,11 @@ uint64_t hooked_inventory(
         mode
     );
 
-    // =====================================================
     // Progressive location check
-    //
     // The original inventory function has now completed,
     // so the inventory contains the newly acquired item.
     // The current total determines which progressive
-    // location check this acquisition represents.
-    // =====================================================
+    // location check this should give.
 
     if (amount > 0)
     {
@@ -725,10 +709,7 @@ uint64_t hooked_inventory(
     return result;
 }
 
-
-// =====================================================
 // Hook setup
-// =====================================================
 
 bool HookInventory()
 {

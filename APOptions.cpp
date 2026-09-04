@@ -62,6 +62,13 @@ bool APOptions::Load(
                 "defeat_pocket_circuit_owner_wincon",
                 0
             );
+
+        pocketCircuit =
+            data.value(
+                "pocket_circuit",
+                0
+            );
+
         if (goldenBallWincon == 1){
             printf(
                 "[AP] Wincon: %d/%d golden balls required\n",
@@ -94,6 +101,7 @@ bool APOptions::Load(
         goldenBallWincon = 0;
         defeatShishidoWincon = 0;
         defeatPocketCircuitOwnerWincon = 0;
+        pocketCircuit = 0;
 
         return false;
     }
@@ -123,4 +131,9 @@ bool APOptions::GetDefeatShishidoWincon() const
 bool APOptions::GetDefeatPocketCircuitOwnerWincon() const
 {
     return defeatPocketCircuitOwnerWincon != 0;
+}
+
+bool APOptions::GetPocketCircuit() const
+{
+    return pocketCircuit != 0;
 }

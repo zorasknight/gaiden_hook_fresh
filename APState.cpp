@@ -10,7 +10,6 @@
 using json = nlohmann::json;
 
 
-
 bool APState::Load()
 {
     std::filesystem::path statePath(filename);
@@ -41,16 +40,10 @@ bool APState::Load()
     }
 
 
-
     json data;
 
     file >> data;
 
-
-
-    //
-    // New format
-    //
     if (data.contains("queued_locations"))
     {
         for (auto& loc : data["queued_locations"])
@@ -66,10 +59,6 @@ bool APState::Load()
         }
     }
 
-
-    //
-    // Old format compatibility
-    //
     else if (data.contains("checked_locations"))
     {
         for (auto& loc : data["checked_locations"])
@@ -88,7 +77,6 @@ bool APState::Load()
             );
         }
     }
-
 
 
     if (data.contains("received_items"))
@@ -118,7 +106,7 @@ bool APState::Load()
         }
     }
 
-
+    //Also Wincons
     if (data.contains("wincons"))
     {
         auto& wincons = data["wincons"];
@@ -159,9 +147,6 @@ bool APState::Load()
 }
 
 
-
-
-
 bool APState::Save()
 {
     std::filesystem::path statePath(filename);
@@ -174,17 +159,11 @@ bool APState::Save()
         );
     }
 
-
-
     json data;
-
 
     data["version"] = 7;
 
-
-
     data["queued_locations"] = json::array();
-
 
     for (auto& loc : queuedLocations)
     {
@@ -199,10 +178,8 @@ bool APState::Save()
     }
 
 
-
     data["received_items"] =
         json::array();
-
 
     for (auto& item : receivedItems)
     {
@@ -223,7 +200,7 @@ bool APState::Save()
     {
         data["hinted_locations"].push_back(location);
     }
-
+    // Wincons
     data["wincons"] =
     {
         {"golden_ball", goldenBallWincon},
@@ -245,9 +222,7 @@ bool APState::Save()
     }
 
 
-
     file << data.dump(4);
-
 
 
     if (!file.good())
@@ -263,15 +238,7 @@ bool APState::Save()
     return true;
 }
 
-
-
-
-
-
-// =====================================================
 // Location queue
-// =====================================================
-
 
 void APState::QueueLocation(
     int64_t location
@@ -295,7 +262,6 @@ void APState::QueueLocation(
 }
 
 
-
 bool APState::IsLocationQueued(
     int64_t location
 )
@@ -309,7 +275,6 @@ bool APState::IsLocationQueued(
 
     return false;
 }
-
 
 
 bool APState::IsLocationAcknowledged(
@@ -327,7 +292,6 @@ bool APState::IsLocationAcknowledged(
 }
 
 
-
 void APState::MarkLocationSent(
     int64_t location
 )
@@ -341,7 +305,6 @@ void APState::MarkLocationSent(
         }
     }
 }
-
 
 
 void APState::MarkLocationAcknowledged(
@@ -359,14 +322,7 @@ void APState::MarkLocationAcknowledged(
     }
 }
 
-
-
-
-
-// =====================================================
 // Incoming items
-// =====================================================
-
 
 void APState::QueueReceivedItem(
     int64_t item,
@@ -393,7 +349,6 @@ void APState::QueueReceivedItem(
 }
 
 
-
 bool APState::IsItemDelivered(
     int index
 )
@@ -407,7 +362,6 @@ bool APState::IsItemDelivered(
 
     return false;
 }
-
 
 
 void APState::MarkItemDelivered(
@@ -502,19 +456,16 @@ std::vector<APQueuedLocation>& APState::GetQueuedLocations()
 }
 
 
-
 const std::vector<APQueuedLocation>& APState::GetQueuedLocations() const
 {
     return queuedLocations;
 }
 
 
-
 std::vector<APReceivedItem>& APState::GetReceivedItems()
 {
     return receivedItems;
 }
-
 
 
 const std::vector<APReceivedItem>& APState::GetReceivedItems() const

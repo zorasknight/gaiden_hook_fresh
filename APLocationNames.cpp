@@ -12,10 +12,6 @@ using json = nlohmann::json;
 APLocationNames g_APLocationNames;
 
 
-// =====================================================
-// Helpers
-// =====================================================
-
 static std::string RemoveTrailingSlot(
     const std::string& label
 )
@@ -48,9 +44,7 @@ static std::string RemoveTrailingSlot(
 }
 
 
-// =====================================================
 // Load location data
-// =====================================================
 
 bool APLocationNames::Load(
     const std::string& path
@@ -137,9 +131,7 @@ bool APLocationNames::Load(
 }
 
 
-// =====================================================
 // Location name lookup
-// =====================================================
 
 std::string APLocationNames::GetName(
     int64_t location_id
@@ -155,9 +147,7 @@ std::string APLocationNames::GetName(
 }
 
 
-// =====================================================
 // Find locations belonging to the same shop
-// =====================================================
 
 std::vector<int64_t>
 APLocationNames::GetShopLocationsFor(
@@ -172,10 +162,10 @@ APLocationNames::GetShopLocationsFor(
     if (source == locations.end())
         return result;
 
-    //
+
     // Only locations originating from the shop
     // data should participate in shop grouping.
-    //
+
     if (
         source->second.source !=
         "shop.bin.json"
@@ -184,18 +174,16 @@ APLocationNames::GetShopLocationsFor(
         return result;
     }
 
-    //
     // Remove the trailing slot number.
-    //
+
     std::string sourceBase =
         RemoveTrailingSlot(
             source->second.label
         );
 
-    //
     // If there is no trailing number, this isn't
     // a slot-based shop location.
-    //
+
     if (
         sourceBase ==
         source->second.label
@@ -204,18 +192,15 @@ APLocationNames::GetShopLocationsFor(
         return result;
     }
 
-    //
     // Find every other shop location with the
     // same base label.
-    //
+
     for (
         const auto& [id, info] :
         locations
         )
     {
-        //
-        // Only compare against shop locations.
-        //
+
         if (
             info.source !=
             "shop.bin.json"

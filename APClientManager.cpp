@@ -1171,10 +1171,8 @@ void APClientManager::SendGoal()
         return;
     }
 
-
-    //
     // Check all enabled win conditions.
-    //
+
     if (!AreWinconsComplete())
     {
         printf(
@@ -1211,9 +1209,8 @@ void APClientManager::CheckLocation(
         location
     );
 
-    //
     // Normal AP location check.
-    //
+
     state.QueueLocation(
         location
     );
@@ -1249,11 +1246,6 @@ void APClientManager::CheckLocation(
 
     if (!shopLocations.empty())
     {
-        printf(
-            "[AP] Shop location detected: %s (%lld)\n",
-            g_APLocationNames.GetName(location).c_str(),
-            location
-        );
 
         for (int64_t shopLocation : shopLocations)
         {
@@ -1264,12 +1256,6 @@ void APClientManager::CheckLocation(
 
             if (state.HasLocationHinted(shopLocation))
             {
-                printf(
-                    "[AP] Hint already sent for %s (%lld), skipping\n",
-                    g_APLocationNames.GetName(shopLocation).c_str(),
-                    shopLocation
-                );
-
                 continue;
             }
 

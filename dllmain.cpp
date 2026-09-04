@@ -148,15 +148,9 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
 
 
-        // =========================
-        // Archipelago
-        // =========================
 
+        // Archipelago Connections
 
-        // New quick connect:
-        // connect archipelago.gg:36115
-        // Also accepts:
-        // /connect archipelago.gg:36115
         else if (
             sscanf_s(
                 command,
@@ -213,12 +207,8 @@ DWORD WINAPI ConsoleThread(LPVOID)
         }
 
 
-
-        // New quick slot:
         // slot MySlot password
-        //
-        // Old:
-        // ap slot MySlot password
+
         else if (
             strncmp(command, "/slot ", 6) == 0 ||
             strncmp(command, "slot ", 5) == 0 ||
@@ -430,11 +420,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     }
 
 
-    // =========================
     // Load AP database
-    // =========================
-
-
 
 
     if (!g_APItems.Load(
@@ -446,10 +432,8 @@ DWORD WINAPI MainThread(LPVOID lpParam)
         );
     }
 
-    // =========================
-    // Load progressive item database
-    // =========================
 
+    // Load progressive item database
 
     if (!g_APProgressiveItems.Load())
     {
@@ -459,11 +443,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     }
 
 
-
-
-    // =========================
     // Install inventory hook
-    // =========================
 
 
     if (!HookInventory())

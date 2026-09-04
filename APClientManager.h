@@ -15,9 +15,8 @@
 
 extern APProgressiveItems g_APProgressiveItems;
 
-//
 // AP connection config
-//
+
 bool SaveAPConfig(
     const std::string& host,
     int port,
@@ -42,12 +41,11 @@ struct TimelineEventEntry
 };
 
 
-//
+
 // Game-thread actions
-//
 // These actions are produced by non-game threads and
 // consumed by the main game thread.
-//
+
 enum class GameActionType
 {
     DeliverItem,
@@ -101,19 +99,17 @@ public:
     void SendGoal();
 
 
-    //
+
     // Location sending
-    //
+
     void CheckLocation(
         int64_t location
     );
 
     void FlushLocationQueue();
 
-
-    //
     // Incoming items
-    //
+
     void ReceiveItem(
         int64_t item_id,
         int index
@@ -128,17 +124,15 @@ public:
     void FlushItemQueue();
 
 
-    //
     // Inventory
-    //
+
     void InventoryReady();
 
     bool IsConnected();
 
 
-    //
     // Game-thread action queue
-    //
+
     void QueueGameAction(
         const GameAction& action
     );
@@ -147,9 +141,9 @@ public:
 
 private:
 
-    //
+
     // Game-thread action processing
-    //
+
     void DrainGameActions();
 
     void ProcessGameAction(
@@ -169,9 +163,8 @@ private:
     );
 
 
-    //
     // AP worker thread
-    //
+
     void APWorkerThread();
 
 
@@ -182,9 +175,8 @@ private:
     static constexpr int MAX_CONNECT_ATTEMPTS = 3;
 
 
-    //
     // Current connection info
-    //
+
     std::string pendingSlot;
     std::string pendingPassword;
 
@@ -192,31 +184,28 @@ private:
     int lastPort = 0;
 
 
-    //
+
     // Persistent state
-    //
+
     APState state;
 
 
-    //
     // Runtime flags
-    //
+
     bool inventoryReadyFlag = false;
     bool initialized = false;
     bool connected = false;
     bool goalSent = false;
 
 
-    //
     // Game-thread action queue
-    //
+
     std::queue<GameAction> gameActionQueue;
     std::mutex gameActionMutex;
 
 
-    //
     // AP worker
-    //
+
     std::thread apWorker;
     bool apWorkerRunning = false;
 };
