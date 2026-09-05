@@ -16,8 +16,8 @@
 APClientManager g_AP;
 
 static const char* AP_CONFIG = "mods/Gaiden_Rando/APConfig.json";
-constexpr int64_t SHISHIDO_WINCON_LOCATION = 692;
-constexpr int64_t POCKET_CIRCUIT_OWNER_WINCON_LOCATION = 693;
+constexpr int64_t SHISHIDO_WINCON_LOCATION = 2000;
+constexpr int64_t POCKET_CIRCUIT_OWNER_WINCON_LOCATION = 2001;
 
 bool SaveAPConfig(
     const std::string& host,
@@ -164,6 +164,13 @@ void APClientManager::ProcessTimelineEvent(
     uint32_t stateValue
 )
 {
+    printf(
+        "[Timeline] Event %u/%u/%u\n",
+        category,
+        mission,
+        stateValue
+    );
+
     for (const auto& event : timelineEvents)
     {
         if (
@@ -171,19 +178,16 @@ void APClientManager::ProcessTimelineEvent(
             event.mission == mission
             )
         {
+
+            // Actual event state
+
             if (event.state == stateValue)
             {
-                //CheckLocation(event.locationID);
                 printf(
                     "[Timeline] Matched event %u/%u/%u -> location %lld\n",
                     category,
                     mission,
                     stateValue,
-                    event.locationID
-                );
-
-
-                CheckLocation(
                     event.locationID
                 );
 
@@ -221,7 +225,17 @@ void APClientManager::ProcessTimelineEvent(
 
                     SendGoal();
                 }
+                else
+                {
+                    CheckLocation(
+                        event.locationID
+                    );
+                }
             }
+
+
+            // Independent hint state
+
             if (
                 event.stateHint != UINT32_MAX &&
                 event.stateHint == stateValue
@@ -236,20 +250,48 @@ void APClientManager::ProcessTimelineEvent(
                     )
                     )
                 {
-                    printf(
-                        "[AP] Creating hint for location %s (%lld)\n",
-                        g_APLocationNames.GetName(
+                    if (state.HasLocationHinted(event.locationID))
+                    {
+                        printf(
+                            "[AP] Hint already sent for location %s (%lld), skipping\n",
+                            g_APLocationNames.GetName(
+                                event.locationID
+                            ).c_str(),
                             event.locationID
-                        ).c_str(),
-                        event.locationID
-                    );
+                        );
+                    }
+                    else
+                    {
+                        printf(
+                            "[AP] Creating hint for location %s (%lld)\n",
+                            g_APLocationNames.GetName(
+                                event.locationID
+                            ).c_str(),
+                            event.locationID
+                        );
 
-                    client->CreateHints(
-                        { event.locationID }
+                        client->CreateHints(
+                            { event.locationID }
+                        );
+
+                        state.MarkLocationHinted(
+                            event.locationID
+                        );
+
+                        state.Save();
+                    }
+                }
+                else
+                {
+                    printf(
+                        "[AP] Timeline hint matched %u/%u/%u, but location %lld is not in item database\n",
+                        category,
+                        mission,
+                        stateValue,
+                        event.locationID
                     );
                 }
             }
-            return;
         }
     }
 }
