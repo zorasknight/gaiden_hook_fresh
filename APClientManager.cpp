@@ -164,12 +164,12 @@ void APClientManager::ProcessTimelineEvent(
     uint32_t stateValue
 )
 {
-    printf(
-        "[Timeline] Event %u/%u/%u\n",
-        category,
-        mission,
-        stateValue
-    );
+    //printf(
+    //    "[Timeline] Event %u/%u/%u\n",
+    //    category,
+    //    mission,
+    //    stateValue
+    //);
 
     for (const auto& event : timelineEvents)
     {
@@ -183,13 +183,13 @@ void APClientManager::ProcessTimelineEvent(
 
             if (event.state == stateValue)
             {
-                printf(
-                    "[Timeline] Matched event %u/%u/%u -> location %lld\n",
-                    category,
-                    mission,
-                    stateValue,
-                    event.locationID
-                );
+                //printf(
+                //    "[Timeline] Matched event %u/%u/%u -> location %lld\n",
+                //    category,
+                //    mission,
+                //    stateValue,
+                //    event.locationID
+                //);
 
                 if (
                     event.locationID ==
@@ -252,23 +252,23 @@ void APClientManager::ProcessTimelineEvent(
                 {
                     if (state.HasLocationHinted(event.locationID))
                     {
-                        printf(
-                            "[AP] Hint already sent for location %s (%lld), skipping\n",
-                            g_APLocationNames.GetName(
-                                event.locationID
-                            ).c_str(),
-                            event.locationID
-                        );
+                        //printf(
+                        //    "[AP] Hint already sent for location %s (%lld), skipping\n",
+                        //    g_APLocationNames.GetName(
+                        //        event.locationID
+                        //    ).c_str(),
+                        //    event.locationID
+                        //);
                     }
                     else
                     {
-                        printf(
-                            "[AP] Creating hint for location %s (%lld)\n",
-                            g_APLocationNames.GetName(
-                                event.locationID
-                            ).c_str(),
-                            event.locationID
-                        );
+                        //printf(
+                        //    "[AP] Creating hint for location %s (%lld)\n",
+                        //    g_APLocationNames.GetName(
+                        //        event.locationID
+                        //    ).c_str(),
+                        //    event.locationID
+                        //);
 
                         client->CreateHints(
                             { event.locationID }
@@ -283,13 +283,13 @@ void APClientManager::ProcessTimelineEvent(
                 }
                 else
                 {
-                    printf(
-                        "[AP] Timeline hint matched %u/%u/%u, but location %lld is not in item database\n",
-                        category,
-                        mission,
-                        stateValue,
-                        event.locationID
-                    );
+                    //printf(
+                    //    "[AP] Timeline hint matched %u/%u/%u, but location %lld is not in item database\n",
+                    //    category,
+                    //    mission,
+                    //    stateValue,
+                    //    event.locationID
+                    //);
                 }
             }
         }
@@ -501,7 +501,7 @@ bool APClientManager::Connect(
                 if (connectAttempts >= MAX_CONNECT_ATTEMPTS)
                 {
                     printf(
-                        "[AP] Giving up after %d attempts. Please manually connect again with /connect archipelago.gg:PORT\n",
+                        "[AP] Giving up after %d attempts. \nPlease manually connect again with /connect archipelago.gg:12345\n",
                         MAX_CONNECT_ATTEMPTS
                     );
 
@@ -529,7 +529,7 @@ bool APClientManager::Connect(
             []()
             {
                 printf(
-                    "[AP] Room info received\n"
+                    "[AP] Room info received \nPlease connect with: slot YourSlotName Password. \n(if you do not have a password, leave the last part empty)\n"
                 );
             }
         );
@@ -1301,11 +1301,11 @@ void APClientManager::CheckLocation(
                 continue;
             }
 
-            printf(
-                "[AP] Hinting shop location: %s (%lld)\n",
-                g_APLocationNames.GetName(shopLocation).c_str(),
-                shopLocation
-            );
+            //printf(
+            //    "[AP] Hinting shop location: %s (%lld)\n",
+            //    g_APLocationNames.GetName(shopLocation).c_str(),
+            //    shopLocation
+            //);
 
             client->CreateHints(
                 {

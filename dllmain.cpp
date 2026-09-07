@@ -28,7 +28,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
 
     printf("\nConsole ready.\n");
-    printf("Waiting for player inventory... Interact with any item within the game to continue\n\n");
+    printf("Waiting for player inventory... Interact with any item within the game to conect inventory hook. \nPlease connect to the AP server with /connect archipelago.gg:12345\n");
 
 
     while (true)
