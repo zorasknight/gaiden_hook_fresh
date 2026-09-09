@@ -70,8 +70,6 @@ constexpr int GOLD_BALL_ID = 6056;
 
 constexpr int AP_PROGRESS_ID = 6285;
 
-bool g_goalSent = false;
-
 using json = nlohmann::json;
 
 using potentially_set_tasks_t =
@@ -446,34 +444,31 @@ void SetItemAmount(
         }
     }
     // AP-only goal check
-    if (
-        itemID == GOLD_BALL_ID &&
-        !g_goalSent
-        )
+    // Golden Ball wincon check
+    if (itemID == GOLD_BALL_ID)
     {
-        int count = GetItemAmount(GOLD_BALL_ID);
-
-        printf(
-            "[AP] Gold Ball count after addition: %d\n",
-            count
-        );
-
+        int count =
+            GetItemAmount(GOLD_BALL_ID);
 
         int required =
             g_APOptions.GetRequiredGoldenBallCount();
 
+        printf(
+            "[AP] Gold Ball count after addition: %d/%d\n",
+            count,
+            required
+        );
+
         if (count >= required)
         {
             printf(
-                "[AP] %d Gold Balls collected! Sending goal!\n",
-                required
+                "[AP] Golden Ball wincon reached!\n"
             );
 
-            g_AP.SendGoal();
-
-            g_goalSent = true;
+            g_AP.MarkWinconComplete(
+                APWincon::GoldenBall
+            );
         }
-        
     }
 }
 
@@ -679,9 +674,9 @@ uint64_t hooked_inventory(
     }
 
     // Goal check after inventory has actually updated
+    // Golden Ball wincon check
     if (
         itemID == GOLD_BALL_ID &&
-        !g_goalSent &&
         IsInventoryReady()
         )
     {
@@ -691,18 +686,21 @@ uint64_t hooked_inventory(
         int required =
             g_APOptions.GetRequiredGoldenBallCount();
 
+        printf(
+            "[AP] Gold Ball count after inventory update: %d/%d\n",
+            count,
+            required
+        );
+
         if (count >= required)
         {
             printf(
-                "[AP] %d Gold Balls collected! Golden Ball wincon complete!\n",
-                required
+                "[AP] Golden Ball wincon reached!\n"
             );
 
             g_AP.MarkWinconComplete(
                 APWincon::GoldenBall
             );
-
-            g_goalSent = true;
         }
     }
 

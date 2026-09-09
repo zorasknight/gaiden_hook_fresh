@@ -200,13 +200,9 @@ void APClientManager::ProcessTimelineEvent(
                         "[AP] Shishido wincon complete!\n"
                     );
 
-                    state.MarkWinconComplete(
+                    MarkWinconComplete(
                         APWincon::DefeatShishido
                     );
-
-                    state.Save();
-
-                    SendGoal();
                 }
                 else if (
                     event.locationID ==
@@ -217,13 +213,9 @@ void APClientManager::ProcessTimelineEvent(
                         "[AP] Pocket Circuit Owner wincon complete!\n"
                     );
 
-                    state.MarkWinconComplete(
+                    MarkWinconComplete(
                         APWincon::DefeatPocketCircuitOwner
                     );
-
-                    state.Save();
-
-                    SendGoal();
                 }
                 else
                 {
@@ -296,12 +288,12 @@ void APClientManager::ProcessTimelineEvent(
     }
 }
 
-void APClientManager::MarkWinconComplete(
-    APWincon wincon
-)
+void APClientManager::MarkWinconComplete(APWincon wincon)
 {
     state.MarkWinconComplete(wincon);
     state.Save();
+
+    SendGoal();
 }
 
 
@@ -1245,6 +1237,19 @@ void APClientManager::CheckLocation(
     int64_t location
 )
 {
+    APItemEntry entry;
+
+    if (!g_APItems.GetItem(location, entry))
+    {
+        //printf(
+        //    "[AP] Location %s (%lld) is not in item mapping - skipping check\n",
+        //    g_APLocationNames.GetName(location).c_str(),
+        //    location
+        //);
+
+        return;
+    }
+
     printf(
         "[AP] Checking location %s (%lld)\n",
         g_APLocationNames.GetName(location).c_str(),
