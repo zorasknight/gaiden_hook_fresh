@@ -23,6 +23,9 @@ public:
         APItemEntry& out
     );
 
+    bool HasLocation(
+        int64_t location_id
+    );
 
 private:
 

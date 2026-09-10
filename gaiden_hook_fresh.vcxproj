@@ -144,7 +144,7 @@ _WEBSOCKETPP_CPP11_STL_;
 _WIN32_WINNT=0x0600;
 WIN32_LEAN_AND_MEAN;
 NOMINMAX;
-WSWRAP_NO_COMPRESSION;
+
 OPENSSL_API_COMPAT=0x10100000L;
 %(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
@@ -157,14 +157,15 @@ $(ProjectDir)External\json;
 $(ProjectDir)External\valijson;
 $(ProjectDir)External\websocketpp;
 $(ProjectDir)External\wswrap\include;
-$(ProjectDir)External\asio\include;</AdditionalIncludeDirectories>
+$(ProjectDir)External\asio\include;$(ProjectDir)External\zlib;</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
-      <AdditionalDependencies>Shell32.lib;libssl.lib;libcrypto.lib;crypt32.lib;delayimp.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)External\openssl\lib\VC\x64\MD</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Shell32.lib;libssl.lib;libcrypto.lib;crypt32.lib;delayimp.lib;zlib.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)External\openssl\lib\VC\x64\MD;$(ProjectDir)External\zlib</AdditionalLibraryDirectories>
       <DelayLoadDLLs>libssl-3-x64.dll;libcrypto-3-x64.dll</DelayLoadDLLs>
     </Link>
     <Manifest>

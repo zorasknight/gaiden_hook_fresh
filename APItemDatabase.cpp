@@ -106,3 +106,18 @@ bool APItemDatabase::GetItem(
 
     return true;
 }
+
+bool APItemDatabase::HasLocation(
+    int64_t location_id
+)
+{
+    for (const auto& pair : items)
+    {
+        if (pair.second.location_id == location_id)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}

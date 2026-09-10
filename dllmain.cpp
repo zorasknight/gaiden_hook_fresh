@@ -1,6 +1,6 @@
-#define ASIO_STANDALONE
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
+//#define ASIO_STANDALONE
+//#define WIN32_LEAN_AND_MEAN
+//#define NOMINMAX
 
 
 #include "APClientManager.h"

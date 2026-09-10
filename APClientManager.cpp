@@ -233,14 +233,7 @@ void APClientManager::ProcessTimelineEvent(
                 event.stateHint == stateValue
                 )
             {
-                APItemEntry entry;
-
-                if (
-                    g_APItems.GetItem(
-                        event.locationID,
-                        entry
-                    )
-                    )
+                if (g_APItems.HasLocation(event.locationID))
                 {
                     if (state.HasLocationHinted(event.locationID))
                     {
@@ -255,7 +248,7 @@ void APClientManager::ProcessTimelineEvent(
                     else
                     {
                         //printf(
-                        //    "[AP] Creating hint for location %s (%lld)\n",
+                        //    "[AP] Creating timeline hint for location %s (%lld)\n",
                         //    g_APLocationNames.GetName(
                         //        event.locationID
                         //    ).c_str(),
@@ -276,7 +269,7 @@ void APClientManager::ProcessTimelineEvent(
                 else
                 {
                     //printf(
-                    //    "[AP] Timeline hint matched %u/%u/%u, but location %lld is not in item database\n",
+                    //    "[AP] Timeline hint matched %u/%u/%u, but location %lld is not in item mapping\n",
                     //    category,
                     //    mission,
                     //    stateValue,
@@ -1237,9 +1230,8 @@ void APClientManager::CheckLocation(
     int64_t location
 )
 {
-    APItemEntry entry;
 
-    if (!g_APItems.GetItem(location, entry))
+    if (!g_APItems.HasLocation(location))
     {
         //printf(
         //    "[AP] Location %s (%lld) is not in item mapping - skipping check\n",
