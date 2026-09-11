@@ -122,10 +122,10 @@ bool APLocationNames::Load(
         }
     }
 
-    printf(
-        "[AP] Loaded %zu location names\n",
-        names.size()
-    );
+    //printf(
+    //    "[AP] Loaded %zu location names\n",
+    //    names.size()
+    //);
 
     return true;
 }

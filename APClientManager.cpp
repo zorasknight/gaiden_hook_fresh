@@ -12,6 +12,7 @@
 #include "APItemNames.h"
 #include "APLocationNames.h"
 #include "APProgressiveItems.h"
+#include "Console.h"
 
 APClientManager g_AP;
 
@@ -77,7 +78,7 @@ void APClientManager::LoadTimelineEvents(
     if (!file)
     {
         printf(
-            "[Timeline] Event list not found: %s\n",
+            "/r[Timeline] Event list not found: %s\n",
             path.c_str()
         );
 
@@ -152,10 +153,10 @@ void APClientManager::LoadTimelineEvents(
         timelineEvents.push_back(entry);
     }
 
-    printf(
-        "[Timeline] Loaded %zu event entries\n",
-        timelineEvents.size()
-    );
+    //printf(
+    //    "/b[Timeline] Loaded /g%zu /wevent entries\n",
+    //    timelineEvents.size()
+    //);
 }
 
 void APClientManager::ProcessTimelineEvent(
@@ -197,7 +198,7 @@ void APClientManager::ProcessTimelineEvent(
                     )
                 {
                     printf(
-                        "[AP] Shishido wincon complete!\n"
+                        "/y[AP] Shishido wincon complete!\n"
                     );
 
                     MarkWinconComplete(
@@ -210,7 +211,7 @@ void APClientManager::ProcessTimelineEvent(
                     )
                 {
                     printf(
-                        "[AP] Pocket Circuit Owner wincon complete!\n"
+                        "/y[AP] Pocket Circuit Owner wincon complete!\n"
                     );
 
                     MarkWinconComplete(
@@ -320,7 +321,7 @@ bool APClientManager::Initialize(
 
     initialized = true;
 
-    printf("[AP] Manager initialized\n");
+    printf("/b[AP] Manager initialized\n");
 
     std::string host;
     std::string slot;
@@ -335,7 +336,7 @@ bool APClientManager::Initialize(
         password))
     {
         printf(
-            "[AP] Previous connection found: %s:%d\n",
+            "[AP] Previous connection found: /g%s:%d\n",
             host.c_str(),
             port
         );
@@ -384,14 +385,13 @@ bool SaveAPConfig(
     {
         file << json.dump(4);
 
-        printf("[AP] Connection saved\n");
+        printf("/b[AP] Connection saved\n");
 
         return true;
     }
 
     return false;
 }
-
 
 
 bool APClientManager::Connect(
@@ -401,7 +401,7 @@ bool APClientManager::Connect(
 {
     if (client)
     {
-        printf("[AP] Closing previous client\n");
+        printf("/r[AP] Closing previous client\n");
         client.reset();
     }
 
@@ -415,7 +415,7 @@ bool APClientManager::Connect(
         connectAttempts = 0;
 
         printf(
-            "[AP] Connecting to %s\n",
+            "[AP] Connecting to /g%s\n",
             address.c_str()
         );
 
@@ -441,12 +441,12 @@ bool APClientManager::Connect(
             {
                 connectAttempts = 0;
 
-                printf("[AP] Socket connected\n");
+                printf("/b[AP] Socket connected\n");
 
                 if (!pendingSlot.empty())
                 {
                     printf(
-                        "[AP] Auto-connecting slot %s\n",
+                        "[AP] Auto-connecting slot /g%s\n",
                         pendingSlot.c_str()
                     );
 
@@ -458,7 +458,7 @@ bool APClientManager::Connect(
                 }
                 else {
                     printf(
-                        "Please connect to your AP Slot using: slot SlotName\n"
+                        "Please connect to your AP Slot using: /bslot SlotName\n"
                     );
                 }
             }
@@ -471,13 +471,13 @@ bool APClientManager::Connect(
                 connectAttempts++;
 
                 printf(
-                    "[AP ERROR] %s\n",
+                    "/r[AP ERROR] %s\n",
                     error.c_str()
                 );
 
 
                 printf(
-                    "[AP] Connection attempt %d/%d failed\n",
+                    "/r[AP] Connection attempt %d/%d failed\n",
                     connectAttempts,
                     MAX_CONNECT_ATTEMPTS
                 );
@@ -486,7 +486,7 @@ bool APClientManager::Connect(
                 if (connectAttempts >= MAX_CONNECT_ATTEMPTS)
                 {
                     printf(
-                        "[AP] Giving up after %d attempts. \nPlease manually connect again with /connect archipelago.gg:12345\n",
+                        "/r[AP] Giving up after %d attempts. \nPlease manually connect again with /bconnect archipelago.gg:12345\n",
                         MAX_CONNECT_ATTEMPTS
                     );
 
@@ -504,7 +504,7 @@ bool APClientManager::Connect(
                 connected = false;
 
                 printf(
-                    "[AP] Socket disconnected\n"
+                    "/r[AP] Socket disconnected\n"
                 );
             }
         );
@@ -514,7 +514,7 @@ bool APClientManager::Connect(
             []()
             {
                 printf(
-                    "[AP] Room info received \nPlease connect with: slot YourSlotName Password. \n(if you do not have a password, leave the last part empty)\n"
+                    "[AP] Room info received \nPlease connect with: slot /bYourSlotName Password. \n/w(if you do not have a password, leave the last part empty)\n"
                 );
             }
         );
@@ -545,7 +545,7 @@ bool APClientManager::Connect(
 
 
                 printf(
-                    "[AP] Slot connected\n"
+                    "/b[AP] Slot connected\n"
                 );
 
 
@@ -582,7 +582,7 @@ bool APClientManager::Connect(
                         state.GetReceivedItems())
                     {
                         printf(
-                            "[AP] Queuing queued item after reconnect: %s (%lld)\n",
+                            "[AP] Queuing queued item after reconnect: /b%s (%lld)\n",
                             g_APItemNames.GetName(item.item_id).c_str(),
                             item.item_id
                         );
@@ -599,7 +599,7 @@ bool APClientManager::Connect(
                 else
                 {
                     printf(
-                        "[AP] Inventory not ready, leaving items queued\n"
+                        "/r[AP] Inventory not ready, /wleaving items queued\n"
                     );
                 }
 
@@ -614,7 +614,7 @@ bool APClientManager::Connect(
             [](const std::list<std::string>& reasons)
             {
                 printf(
-                    "[AP] Slot refused:\n"
+                    "/r[AP] Slot refused:\n"
                 );
 
 
@@ -670,7 +670,7 @@ bool APClientManager::Connect(
     catch (const std::exception& e)
     {
         printf(
-            "[AP] Exception: %s\n",
+            "/r[AP] Exception: %s\n",
             e.what()
         );
 
@@ -717,7 +717,7 @@ bool APClientManager::ConnectSlot(
     if (!client)
     {
         printf(
-            "[AP] No client exists\n"
+            "/r[AP] No client exists\n"
         );
 
         return false;
@@ -746,7 +746,7 @@ bool APClientManager::ConnectSlot(
 
 
         printf(
-            "[AP] Slot connect request sent: %s\n",
+            "[AP] Slot connect request sent: /g%s\n",
             slot.c_str()
         );
 
@@ -756,7 +756,7 @@ bool APClientManager::ConnectSlot(
     catch (const std::exception& e)
     {
         printf(
-            "[AP] Slot connection exception: %s\n",
+            "[AP] Slot connection exception: /r%s\n",
             e.what()
         );
 
@@ -770,7 +770,7 @@ bool APClientManager::ConnectSlot(
 void APClientManager::APWorkerThread()
 {
     printf(
-        "[AP] AP worker thread started\n"
+        "/b[AP] AP worker thread started\n"
     );
 
 
@@ -784,7 +784,7 @@ void APClientManager::APWorkerThread()
                 )
             {
                 printf(
-                    "[AP] Cleaning up failed client, Failed to connect with existing information, please make sure your multiworld page is refreshed and try again.\n"
+                    "/r[AP] Cleaning up failed client, Failed to connect with existing information, please make sure your /bmultiworld page is refreshed /wand try again.\n"
                 );
 
                 client.reset();
@@ -798,14 +798,14 @@ void APClientManager::APWorkerThread()
                 catch (const std::exception& e)
                 {
                     printf(
-                        "[AP ERROR] Poll exception: %s\n",
+                        "/r[AP ERROR] Poll exception: %s\n",
                         e.what()
                     );
                 }
                 catch (...)
                 {
                     printf(
-                        "[AP ERROR] Unknown poll exception\n"
+                        "/r[AP ERROR] Unknown poll exception\n"
                     );
                 }
             }
@@ -817,7 +817,7 @@ void APClientManager::APWorkerThread()
 
 
     printf(
-        "[AP] AP worker thread stopped\n"
+        "/r[AP] AP worker thread stopped\n"
     );
 }
 
@@ -929,7 +929,7 @@ void APClientManager::ProcessGameAction(
         if (action.itemIndex > progress)
         {
             printf(
-                "[AP] Item gap detected: game expects index %d, incoming index %d\n",
+                "[AP] Item gap detected: game expects index /g%d, incoming index /g%d\n",
                 progress,
                 action.itemIndex
             );
@@ -946,7 +946,7 @@ void APClientManager::ProcessGameAction(
                     if (item.index == missingIndex)
                     {
                         printf(
-                            "[AP] Replaying missing item index %d: %s (%lld)\n",
+                            "[AP] Replaying missing item index /g%d: %s (%lld)\n",
                             item.index,
                             g_APItemNames.GetName(
                                 item.item_id
@@ -1007,6 +1007,7 @@ void APClientManager::Update()
 
 
 
+
 void APClientManager::CheckAPProgress()
 {
     if (!inventoryReadyFlag)
@@ -1038,7 +1039,7 @@ void APClientManager::CheckAPProgress()
         if (item.index >= gameProgress)
         {
             printf(
-                "[AP] Replaying missing item %s (%lld) (index %d)\n",
+                "[AP] Replaying missing item /g%s (%lld) (index %d)\n",
                 g_APItemNames.GetName(item.item_id).c_str(),
                 item.item_id,
                 item.index
@@ -1076,7 +1077,7 @@ void APClientManager::ReceiveItem(
 
 
     printf(
-        "[AP] Giving %s (%lld)\n",
+        "[AP] Giving /g%s (%lld)\n",
         g_APItemNames.GetName(item_id).c_str(),
         item_id
     );
@@ -1172,7 +1173,7 @@ void APClientManager::SendGoal()
     if (!client)
     {
         printf(
-            "[AP] Cannot send goal - no client\n"
+            "/r[AP] Cannot send goal - no client\n"
         );
 
         return;
@@ -1182,7 +1183,7 @@ void APClientManager::SendGoal()
     if (!connected)
     {
         printf(
-            "[AP] Cannot send goal - not connected\n"
+            "/r[AP] Cannot send goal - not connected\n"
         );
 
         return;
@@ -1192,7 +1193,7 @@ void APClientManager::SendGoal()
     if (goalSent)
     {
         printf(
-            "[AP] Goal already sent\n"
+            "/r[AP] Goal already sent\n"
         );
 
         return;
@@ -1211,7 +1212,7 @@ void APClientManager::SendGoal()
 
 
     printf(
-        "[AP] All enabled win conditions complete! Sending goal completion!\n"
+        "/y[AP] All enabled win conditions complete! Sending goal completion!\n"
     );
 
 
@@ -1243,7 +1244,7 @@ void APClientManager::CheckLocation(
     }
 
     printf(
-        "[AP] Checking location %s (%lld)\n",
+        "[AP] Checking location /m%s (%lld)\n",
         g_APLocationNames.GetName(location).c_str(),
         location
     );
@@ -1259,7 +1260,7 @@ void APClientManager::CheckLocation(
     if (!client || !connected)
     {
         printf(
-            "[AP] Not connected, location saved for later\n"
+            "/r[AP] Not connected, /wlocation saved for later\n"
         );
 
         return;

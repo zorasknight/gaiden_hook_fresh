@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include <nlohmann/json.hpp>
+#include "Console.h"
 
 
 using json = nlohmann::json;
@@ -123,21 +124,21 @@ bool APState::Load()
         if (goldenBallWincon)
         {
             printf(
-                "[AP] Goal completed: Golden Ball\n"
+                "/y[AP] Goal completed: Golden Ball\n"
             );
         }
 
         if (defeatShishidoWincon)
         {
             printf(
-                "[AP] Goal completed: Defeat Shishido\n"
+                "/y[AP] Goal completed: Defeat Shishido\n"
             );
         }
 
         if (defeatPocketCircuitOwnerWincon)
         {
             printf(
-                "[AP] Goal completed: Defeat Pocket Circuit Owner\n"
+                "/y[AP] Goal completed: Defeat Pocket Circuit Owner\n"
             );
         }
     }
@@ -215,7 +216,7 @@ bool APState::Save()
     if (!file.good())
     {
         printf(
-            "[AP ERROR] Failed to save state file\n"
+            "/r[AP ERROR] Failed to save state file\n"
         );
 
         return false;
@@ -228,7 +229,7 @@ bool APState::Save()
     if (!file.good())
     {
         printf(
-            "[AP ERROR] Failed writing state file\n"
+            "/r[AP ERROR] Failed writing state file\n"
         );
 
         return false;

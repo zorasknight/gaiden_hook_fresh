@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include <nlohmann/json.hpp>
+#include "Console.h"
 
 using json = nlohmann::json;
 
@@ -27,7 +28,7 @@ bool APProgressiveItems::Load()
     if (!file.good())
     {
         printf(
-            "[AP] progressive_items.json not found\n"
+            "/r[AP] progressive_items.json not found\n"
         );
 
         return false;
@@ -79,7 +80,7 @@ bool APProgressiveItems::Load()
     catch (const std::exception& e)
     {
         printf(
-            "[AP] Failed to load progressive_items.json: %s\n",
+            "/r[AP] Failed to load progressive_items.json: %s\n",
             e.what()
         );
 

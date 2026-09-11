@@ -15,10 +15,11 @@
 
 #include "MinHook.h"
 
+#include "Console.h"
+
 DWORD lastProgressCheck = 0;
 
 HMODULE g_Module = nullptr;
-
 
 DWORD WINAPI ConsoleThread(LPVOID)
 {
@@ -27,8 +28,8 @@ DWORD WINAPI ConsoleThread(LPVOID)
     char arg2[256] = {};
 
 
-    printf("\nConsole ready.\n");
-    printf("Waiting for player inventory... Interact with any item within the game to conect inventory hook. \nPlease connect to the AP server with /connect archipelago.gg:12345\n");
+    ColorPrintf("\n/bConsole ready.\n");
+    printf("Waiting for player inventory... /bInteract with any item within the game to connect inventory hook. \n/wPlease connect to the AP server with /gconnect archipelago.gg:12345\n");
 
 
     while (true)
@@ -36,7 +37,6 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
         arg1[0] = '\0';
         arg2[0] = '\0';
-        printf("> ");
         fflush(stdout);
 
 
@@ -55,7 +55,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
         if (sscanf_s(command, "set %d %d", &itemID, &amount) == 2)
         {
             printf(
-                "Setting item %d to %d...\n",
+                "Setting item /g%d /wto /g%d...\n",
                 itemID,
                 amount
             );
@@ -74,7 +74,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
 
             printf(
-                "Giving item %d: %d -> %d\n",
+                "Giving item /g%d: %d -> %d\n",
                 itemID,
                 current,
                 newAmount
@@ -99,7 +99,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
 
             printf(
-                "Taking item %d: %d -> %d\n",
+                "Taking item /g%d: %d -> %d\n",
                 itemID,
                 current,
                 newAmount
@@ -116,7 +116,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
         else if (sscanf_s(command, "find %d", &itemID) == 1)
         {
             printf(
-                "Item %d quantity: %d\n",
+                "Item /g%d /wquantity: /g%d\n",
                 itemID,
                 GetItemAmount(itemID)
             );
@@ -169,7 +169,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             )
         {
             printf(
-                "[AP] Connecting to %s:%d\n",
+                "[AP] Connecting to /g%s:%d\n",
                 arg1,
                 itemID
             );
@@ -194,7 +194,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             ) == 2)
         {
             printf(
-                "[AP] Connecting to %s:%d\n",
+                "[AP] Connecting to /g%s:%d\n",
                 arg1,
                 itemID
             );
@@ -239,7 +239,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             if (count >= 1)
             {
                 printf(
-                    "[AP] Connecting slot %s\n",
+                    "[AP] Connecting slot /g%s\n",
                     arg1
                 );
 
@@ -304,7 +304,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             )
         {
             printf(
-                "[AP] Checking location %d\n",
+                "[AP] Checking location /m%d\n",
                 itemID
             );
 
@@ -312,7 +312,15 @@ DWORD WINAPI ConsoleThread(LPVOID)
             g_AP.CheckLocation(itemID);
         }
 
-
+        else if (
+            strcmp(command, "release\n") == 0 ||
+            strcmp(command, "/release\n") == 0 ||
+            strcmp(command, "ap release\n") == 0
+            )
+        {
+            printf("[AP] Sending /g!release...\n");
+            g_AP.Say("!release");
+        }
 
         else if (strcmp(command, "help\n") == 0)
         {
@@ -329,6 +337,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             printf("ap slot <slot> [password]\n");
             printf("ap say <message>\n");
             printf("ap check <locationID>\n\n");
+            printf("release\n\n");
             printf("timeline <category> <mission> <state>\n");
         }
 
@@ -336,7 +345,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
         else
         {
-            printf("Unknown command.\n");
+            printf("/rUnknown command.\n");
         }
     }
 
@@ -397,7 +406,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
 
 
     printf(
-        "[YakLadGai] Archipelago DLL now loaded\n"
+        "/b[YakLadGai] Archipelago DLL now loaded\n"
     );
 
 
@@ -413,7 +422,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     if (status != MH_OK)
     {
         printf(
-            "[YakLadGai] MinHook failed\n"
+            "/r [YakLadGai] MinHook failed\n"
         );
 
         return 0;
@@ -428,7 +437,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     ))
     {
         printf(
-            "[AP] Item database failed to load\n"
+            "/r [AP] Item database failed to load\n"
         );
     }
 
@@ -438,7 +447,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     if (!g_APProgressiveItems.Load())
     {
         printf(
-            "[AP] Progressive item database failed to load\n"
+            "/r [AP] Progressive item database failed to load\n"
         );
     }
 
@@ -449,13 +458,13 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     if (!HookInventory())
     {
         printf(
-            "[YakLadGai] Inventory hook failed\n"
+            "/r [YakLadGai] Inventory hook failed\n"
         );
     }
     if (!HookTaskTable())
     {
         printf(
-            "[YakLadGai] Task hook failed\n"
+            "/r [YakLadGai] Task hook failed\n"
         );
     }
 
@@ -484,7 +493,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
         CloseHandle(consoleThread);
     else
         printf(
-            "Failed to start console thread.\n"
+            "/r Failed to start console thread.\n"
         );
 
     DWORD lastProgressSync = GetTickCount();

@@ -78,7 +78,6 @@ public:
     );
 
     void Update();
-
     void CheckAPProgress();
 
 

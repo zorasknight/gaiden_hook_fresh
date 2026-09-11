@@ -10,6 +10,7 @@
 #include "APOptions.h"
 #include <array>
 #include <unordered_map>
+#include "Console.h"
 
 constexpr int DRAG_ON_ID = 4760;
 constexpr int GOLEM_TIGER_ID = 4761;
@@ -141,7 +142,7 @@ void SetTimelineState(
     if (!original_potentially_set_tasks)
     {
         printf(
-            "[Timeline] Cannot set state - original function not ready\n"
+            "/r[Timeline] Cannot set state - original function not ready\n"
         );
 
         return;
@@ -150,7 +151,7 @@ void SetTimelineState(
     if (!g_timelineParam1)
     {
         printf(
-            "[Timeline] Cannot set state - timeline parameter not captured\n"
+            "/r[Timeline] Cannot set state - timeline parameter not captured\n"
         );
 
         return;
@@ -166,7 +167,7 @@ void SetTimelineState(
     );
 
     printf(
-        "[Timeline] Set %u/%u/%u\n",
+        "[Timeline] Set /g%u/%u/%u\n",
         category,
         mission,
         state
@@ -199,16 +200,16 @@ bool HookTaskTable()
     if (!address)
     {
         printf(
-            "[Timeline] Timeline pattern not found\n"
+            "/r[Timeline] Timeline pattern not found\n"
         );
 
         return false;
     }
 
-    printf(
-        "[Timeline] Timeline pattern resolved to 0x%llX\n",
-        address
-    );
+    //printf(
+        //"[Timeline] Timeline pattern resolved to /g0x%llX\n",
+        //address
+    //);
 
     MH_STATUS status =
         MH_CreateHook(
@@ -220,7 +221,7 @@ bool HookTaskTable()
     if (status != MH_OK)
     {
         printf(
-            "[Timeline] CreateHook failed: %d\n",
+            "/r[Timeline] CreateHook failed: %d\n",
             status
         );
 
@@ -235,17 +236,17 @@ bool HookTaskTable()
     if (status != MH_OK)
     {
         printf(
-            "[Timeline] EnableHook failed: %d\n",
+            "/r[Timeline] EnableHook failed: %d\n",
             status
         );
 
         return false;
     }
 
-    printf(
-        "[Timeline] Timeline hook enabled at 0x%llX\n",
-        address
-    );
+    //printf(
+    //    "[Timeline] Timeline hook enabled at /g0x%llX\n",
+    //    address
+    //);
 
     return true;
 }
@@ -393,7 +394,7 @@ void SetItemAmount(
     if (!IsInventoryReady())
     {
         printf(
-            "[Inventory] Cannot set item %d - inventory not ready\n",
+            "[Inventory] Cannot set item /g%d - /rinventory not ready\n",
             itemID
         );
 
@@ -404,7 +405,7 @@ void SetItemAmount(
     if (!original_inventory)
     {
         printf(
-            "[Inventory] Cannot set item %d - hook not ready\n",
+            "[Inventory] Cannot set item /g%d - /rhook not ready\n",
             itemID
         );
 
@@ -432,7 +433,7 @@ void SetItemAmount(
             if (it != CAR_LOCATIONS.end())
             {
                 printf(
-                    "[AP] Car %d acquired - checking 5 car locations\n",
+                    "[AP] Car /g%d /wacquired - checking /g5 /wcar locations\n",
                     itemID
                 );
 
@@ -454,7 +455,7 @@ void SetItemAmount(
             g_APOptions.GetRequiredGoldenBallCount();
 
         printf(
-            "[AP] Gold Ball count after addition: %d/%d\n",
+            "[AP] Gold Ball count after addition: /g%d/%d\n",
             count,
             required
         );
@@ -462,7 +463,7 @@ void SetItemAmount(
         if (count >= required)
         {
             printf(
-                "[AP] Golden Ball wincon reached!\n"
+                "/y[AP] Golden Ball wincon reached!\n"
             );
 
             g_AP.MarkWinconComplete(
@@ -480,7 +481,7 @@ void GiveAPItem(int64_t itemID)
     if (!IsInventoryReady())
     {
         printf(
-            "[AP] Cannot give item %lld - inventory not ready\n",
+            "[AP] Cannot give item /g%lld - /rinventory not ready\n",
             itemID
         );
 
@@ -518,7 +519,7 @@ void GiveProgressiveAPItem(int progressiveID)
     if (!item)
     {
         printf(
-            "[AP] Progressive item %d not found in database\n",
+            "[AP] Progressive item /g%d /rnot found in database\n",
             progressiveID
         );
 
@@ -534,7 +535,7 @@ void GiveProgressiveAPItem(int progressiveID)
     if (nextCount > static_cast<int>(item->levels.size()))
     {
         printf(
-            "[AP] %s already at max level (%d)\n",
+            "[AP] /g%s /walready at max level /g(%d)\n",
             item->name.c_str(),
             static_cast<int>(item->levels.size())
         );
@@ -545,7 +546,7 @@ void GiveProgressiveAPItem(int progressiveID)
     int levelID =
         item->levels[nextCount - 1];
 
-    printf("[AP] Giving %s level %d -> %s (%d)\n", item->name.c_str(), nextCount, g_APItemNames.GetName(levelID).c_str(), levelID);
+    printf("[AP] Giving /g%s /wlevel /g%d -> %s (%d)\n", item->name.c_str(), nextCount, g_APItemNames.GetName(levelID).c_str(), levelID);
 
     SetItemAmount(
         progressiveID,
@@ -585,13 +586,13 @@ uint64_t hooked_inventory(
 
 
         printf(
-            "\n[Inventory] Player inventory detected!\n"
-            "Pointer : 0x%llX\n"
-            "Param1  : 0x%llX\n"
-            "Item ID : %d\n\n",
-            g_inventoryPtr,
-            g_param1,
-            itemID
+            "\n/g[Inventory] Player inventory detected!\n"
+            //"Pointer : 0x%llX\n"
+            //"Param1  : 0x%llX\n"
+            //"Item ID : %d\n\n",
+            //g_inventoryPtr,
+            //g_param1,
+            //itemID
         );
 
 
@@ -665,7 +666,7 @@ uint64_t hooked_inventory(
             else
             {
                 printf(
-                    "[AP] Progressive %s acquired #%d, but no check exists for this count\n",
+                    "[AP] Progressive /g%s /wacquired /g#%d, /rbut no check exists for this count\n",
                     progressive->name.c_str(),
                     currentAmount
                 );
@@ -687,7 +688,7 @@ uint64_t hooked_inventory(
             g_APOptions.GetRequiredGoldenBallCount();
 
         printf(
-            "[AP] Gold Ball count after inventory update: %d/%d\n",
+            "[AP] Gold Ball count after inventory update: /g%d/%d\n",
             count,
             required
         );
@@ -695,7 +696,7 @@ uint64_t hooked_inventory(
         if (count >= required)
         {
             printf(
-                "[AP] Golden Ball wincon reached!\n"
+                "/y[AP] Golden Ball wincon reached!\n"
             );
 
             g_AP.MarkWinconComplete(
@@ -737,7 +738,7 @@ bool HookInventory()
     if (!address)
     {
         printf(
-            "[Inventory] Pattern not found\n"
+            "/r[Inventory] Pattern not found\n"
         );
 
         return false;
@@ -755,7 +756,7 @@ bool HookInventory()
     if (status != MH_OK)
     {
         printf(
-            "[Inventory] CreateHook failed: %d\n",
+            "/r[Inventory] CreateHook failed: %d\n",
             status
         );
 
@@ -772,7 +773,7 @@ bool HookInventory()
     if (status != MH_OK)
     {
         printf(
-            "[Inventory] EnableHook failed: %d\n",
+            "/r[Inventory] EnableHook failed: %d\n",
             status
         );
 
@@ -780,9 +781,9 @@ bool HookInventory()
     }
 
 
-    printf(
-        "[Inventory] Inventory_SetQuantity hook enabled!\n"
-    );
+    //printf(
+    //    "/w[Inventory] Inventory_SetQuantity hook enabled!\n"
+    //);
 
 
     return true;

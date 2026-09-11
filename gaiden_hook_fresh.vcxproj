@@ -180,6 +180,7 @@ $(ProjectDir)External\asio\include;$(ProjectDir)External\zlib;</AdditionalInclud
     <ClInclude Include="APOptions.h" />
     <ClInclude Include="APProgressiveItems.h" />
     <ClInclude Include="APState.h" />
+    <ClInclude Include="console.h" />
     <ClInclude Include="hooks.h" />
     <ClInclude Include="patternscan.h" />
   </ItemGroup>
@@ -191,6 +192,7 @@ $(ProjectDir)External\asio\include;$(ProjectDir)External\zlib;</AdditionalInclud
     <ClCompile Include="APOptions.cpp" />
     <ClCompile Include="APProgressiveItems.cpp" />
     <ClCompile Include="APState.cpp" />
+    <ClCompile Include="console.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="hooks.cpp" />
     <ClCompile Include="MinHook\src\buffer.c" />

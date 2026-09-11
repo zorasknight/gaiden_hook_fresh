@@ -55,10 +55,10 @@ bool APItemNames::Load(
     }
 
 
-    printf(
-        "[AP] Loaded %zu item names\n",
-        names.size()
-    );
+    //printf(
+    //    "[AP] Loaded %zu item names\n",
+    //    names.size()
+    //);
 
 
     return true;

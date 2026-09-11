@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include <nlohmann/json.hpp>
+#include "Console.h"
 
 using json = nlohmann::json;
 
@@ -20,7 +21,7 @@ bool APOptions::Load(
     if (!file)
     {
         printf(
-            "[AP] Failed to open options: %s\n",
+            "/r[AP] Failed to open options: %s\n",
             path.c_str()
         );
 
@@ -71,19 +72,19 @@ bool APOptions::Load(
 
         if (goldenBallWincon == 1){
             printf(
-                "[AP] Wincon: %d/%d golden balls required\n",
+                "/b[AP] Wincon: /g%d|%d /bgolden balls required\n",
                 requiredGoldenBallCount,
                 maxGoldenBallCount
             );
         }
         if (defeatShishidoWincon == 1) {
             printf(
-                "[AP] Wincon: Defeat Shishido\n"
+                "/b[AP] Wincon: Defeat Shishido\n"
             );
         }
         if (defeatPocketCircuitOwnerWincon == 1) {
             printf(
-                "[AP] Wincon: Defeat Pocket Circuit Owner Rival\n"
+                "/b[AP] Wincon: Defeat Pocket Circuit Owner Rival\n"
             );
         }
 
@@ -92,7 +93,7 @@ bool APOptions::Load(
     catch (const std::exception& e)
     {
         printf(
-            "[AP] Failed to load options: %s\n",
+            "/r[AP] Failed to load options: %s\n",
             e.what()
         );
 

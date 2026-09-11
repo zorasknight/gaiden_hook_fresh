@@ -3,7 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdio>
-
+#include "Console.h"
 
 APItemDatabase g_APItems;
 
@@ -20,7 +20,7 @@ bool APItemDatabase::Load(
     if (!file.is_open())
     {
         printf(
-            "[AP] Failed to open CSV\n"
+            "/r[AP] Failed to open CSV\n"
         );
 
         return false;
