@@ -24,6 +24,7 @@ bool SaveAPConfig(
     const std::string& password
 );
 
+
 bool LoadAPConfig(
     std::string& host,
     int& port,
@@ -75,6 +76,13 @@ public:
 
     bool Initialize(
         const std::string& statePath
+    );
+
+    bool GetPythonConnectionInfo(
+        std::string& host,
+        int& port,
+        std::string& slot,
+        std::string& password
     );
 
     void Update();
@@ -142,6 +150,7 @@ private:
 
 
     // Game-thread action processing
+    bool automatedConnection = false;
 
     void DrainGameActions();
 

@@ -8,6 +8,7 @@
 #include <sstream>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <asio.hpp>
 
 #include "APItemNames.h"
 #include "APLocationNames.h"
@@ -26,6 +27,69 @@ bool SaveAPConfig(
     const std::string& slot,
     const std::string& password
 );
+
+bool APClientManager::GetPythonConnectionInfo(
+    std::string& host,
+    int& port,
+    std::string& slot,
+    std::string& password
+)
+{
+    try
+    {
+        asio::io_context io;
+
+        asio::ip::tcp::socket socket(io);
+
+        socket.connect({
+            asio::ip::make_address("127.0.0.1"),
+            38282
+            });
+
+        asio::write(
+            socket,
+            asio::buffer("STATUS\n")
+        );
+
+        asio::streambuf buffer;
+
+        asio::read_until(
+            socket,
+            buffer,
+            '\n'
+        );
+
+        std::istream stream(&buffer);
+
+        nlohmann::json json;
+
+        stream >> json;
+
+        if (!json.value("connected", false))
+            return false;
+
+        std::string server =
+            json.value("server", "");
+
+        size_t separator =
+            server.rfind(':');
+
+        if (separator == std::string::npos)
+            return false;
+
+        host = server.substr(0, separator);
+        port = std::stoi(server.substr(separator + 1));
+
+        slot = json.value("slot", "");
+        password = json.value("password", "");
+
+        return !host.empty() && !slot.empty();
+    }
+    catch (...)
+    {
+        return false;
+    }
+}
 
 bool LoadAPConfig(
     std::string& host,
@@ -329,7 +393,32 @@ bool APClientManager::Initialize(
     int port = 0;
 
 
-    if (LoadAPConfig(
+    if (GetPythonConnectionInfo(
+        host,
+        port,
+        slot,
+        password))
+    {
+        printf(
+            "/g[Python] Using Python connection: %s:%d\n",
+            host.c_str(),
+            port
+        );
+
+        pendingSlot = slot;
+        pendingPassword = password;
+        automatedConnection = true;
+
+        SaveAPConfig(
+            host,
+            port,
+            slot,
+            password
+        );
+
+        Connect(host, port);
+    }
+    else if (LoadAPConfig(
         host,
         port,
         slot,
@@ -343,6 +432,7 @@ bool APClientManager::Initialize(
 
         pendingSlot = slot;
         pendingPassword = password;
+        automatedConnection = true;
 
         Connect(host, port);
     }
@@ -486,7 +576,7 @@ bool APClientManager::Connect(
                 if (connectAttempts >= MAX_CONNECT_ATTEMPTS)
                 {
                     printf(
-                        "/r[AP] Giving up after %d attempts. \nPlease manually connect again with /bconnect archipelago.gg:12345\n",
+                        "/r[AP] Giving up after %d attempts. \nPlease manually connect again with: \n/bconnect archipelago.gg:12345\n",
                         MAX_CONNECT_ATTEMPTS
                     );
 
@@ -511,11 +601,18 @@ bool APClientManager::Connect(
 
 
         client->set_room_info_handler(
-            []()
+            [this]()
             {
-                printf(
-                    "[AP] Room info received \nPlease connect with: slot /bYourSlotName Password. \n/w(if you do not have a password, leave the last part empty)\n"
-                );
+                if (!automatedConnection)
+                {
+                    printf(
+                        "[AP] Room info received \nPlease connect with: slot /bYourSlotName Password. \n/w(if you do not have a password, leave the last part empty)\n"
+                    );
+                }
+                else
+                {
+                    printf("/b[AP] Room info received\n");
+                }
             }
         );
 
