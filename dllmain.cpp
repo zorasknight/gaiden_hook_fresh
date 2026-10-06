@@ -12,7 +12,7 @@
 #include <string>
 
 #include "hooks.h"
-
+#include "debug.h"
 #include "MinHook.h"
 
 #include "Console.h"
@@ -322,6 +322,16 @@ DWORD WINAPI ConsoleThread(LPVOID)
             g_AP.Say("!release");
         }
 
+        else if (strcmp(command, "debug\n") == 0)
+        {
+            debug = !debug;
+
+            printf(
+                "[DEBUG] %s\n",
+                debug ? "Enabled" : "Disabled"
+            );
+        }
+
         else if (strcmp(command, "help\n") == 0)
         {
             printf("\nCommands:\n");
@@ -330,6 +340,7 @@ DWORD WINAPI ConsoleThread(LPVOID)
             printf("give <itemID> <amount>\n");
             printf("take <itemID> <amount>\n");
             printf("find <itemID>\n");
+            printf("debug\n");
 
             printf("\nArchipelago:\n");
             printf("ap give <itemID>\n");

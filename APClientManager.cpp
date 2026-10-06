@@ -10,6 +10,7 @@
 #include <nlohmann/json.hpp>
 #include <asio.hpp>
 
+#include "debug.h"
 #include "APItemNames.h"
 #include "APLocationNames.h"
 #include "APProgressiveItems.h"
@@ -217,10 +218,8 @@ void APClientManager::LoadTimelineEvents(
         timelineEvents.push_back(entry);
     }
 
-    //printf(
-    //    "/b[Timeline] Loaded /g%zu /wevent entries\n",
-    //    timelineEvents.size()
-    //);
+
+    printf( "/b[Timeline] Loaded /g%zu /wevent entries\n", timelineEvents.size() );   
 }
 
 void APClientManager::ProcessTimelineEvent(
@@ -229,12 +228,15 @@ void APClientManager::ProcessTimelineEvent(
     uint32_t stateValue
 )
 {
-    //printf(
-    //    "[Timeline] Event %u/%u/%u\n",
-    //    category,
-    //    mission,
-    //    stateValue
-    //);
+    if (debug)
+    {
+        printf(
+            "[Timeline] Event %u/%u/%u\n",
+            category,
+            mission,
+            stateValue
+        );
+    }
 
     for (const auto& event : timelineEvents)
     {
