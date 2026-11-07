@@ -49,7 +49,12 @@ DWORD WINAPI ConsoleThread(LPVOID)
 
         int timelineCategory;
         int timelineMission;
+        int timelineEntry;
         int timelineState;
+        int timelineGetCategory;
+        int timelineGetMission;
+        int timelineGetEntry;
+        uint8_t rawByte;
 
 
         if (sscanf_s(command, "set %d %d", &itemID, &amount) == 2)
@@ -125,28 +130,68 @@ DWORD WINAPI ConsoleThread(LPVOID)
         else if (
             sscanf_s(
                 command,
-                "timeline %d %d %d",
+                "timeline %d %d %d %d",
                 &timelineCategory,
                 &timelineMission,
+                &timelineEntry,
                 &timelineState
-            ) == 3
+            ) == 4
             )
         {
             printf(
-                "[Timeline] Setting %d/%d/%d\n",
+                "/b [Timeline] Setting /g %d/%d/%d = %d\n",
                 timelineCategory,
                 timelineMission,
+                timelineEntry,
                 timelineState
             );
 
             SetTimelineState(
                 timelineCategory,
                 timelineMission,
+                timelineEntry,
                 timelineState
             );
         }
 
+        else if (
+            sscanf_s(
+                command,
+                "timelineget %d %d %d",
+                &timelineGetCategory,
+                &timelineGetMission,
+                &timelineGetEntry
+            ) == 3
+            )
+        {
+            if (GetTimelineState(
+                timelineGetCategory,
+                timelineGetMission,
+                timelineGetEntry,
+                rawByte
+            ))
+            {
+                uint32_t state = rawByte & 1;
 
+                printf(
+                    "/b[Timeline] %d/%d/%d | /gState: %u /w| Raw byte: 0x%02X\n",
+                    timelineGetCategory,
+                    timelineGetMission,
+                    timelineGetEntry,
+                    rawByte & 1,
+                    rawByte
+                );
+            }
+            else
+            {
+                printf(
+                    "/r[Timeline] Could not find %d/%d/%d\n",
+                    timelineGetCategory,
+                    timelineGetMission,
+                    timelineGetEntry
+                );
+            }
+        }
 
 
         // Archipelago Connections
@@ -349,7 +394,8 @@ DWORD WINAPI ConsoleThread(LPVOID)
             printf("ap say <message>\n");
             printf("ap check <locationID>\n\n");
             printf("release\n\n");
-            printf("timeline <category> <mission> <state>\n");
+            printf("timeline <category> <mission> <entry> <state>\n");
+            printf("timelineget <category> <mission> <entry>\n");
         }
 
 
@@ -478,6 +524,12 @@ DWORD WINAPI MainThread(LPVOID lpParam)
             "/r [YakLadGai] Task hook failed\n"
         );
     }
+    if (!HookTimeline())
+    {
+        printf(
+            "/r [YakLadGai] Timeline hook failed\n"
+        );
+    }
 
 
     fflush(stdout);
@@ -512,6 +564,7 @@ DWORD WINAPI MainThread(LPVOID lpParam)
     while (true)
     {
         g_AP.Update();
+        MonitorTimeline();
         Sleep(16);
 
         if (GetTickCount() - lastProgressCheck >= 30000)

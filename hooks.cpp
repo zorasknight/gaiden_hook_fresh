@@ -11,6 +11,9 @@
 #include <array>
 #include <unordered_map>
 #include "Console.h"
+#include <vector>
+#include <cstring>
+#include <Windows.h>
 
 constexpr int DRAG_ON_ID = 4760;
 constexpr int GOLEM_TIGER_ID = 4761;
@@ -22,6 +25,13 @@ constexpr int GOLEM_JAGUAR_ID = 6004;
 constexpr int ALPHA_COOL_STRIKER_ID = 6005;
 constexpr int SUPER_DEVIL_KILLER_ID = 6006;
 constexpr int BANGIN_KILLER_BEE_ID = 6007;
+
+static volatile LONG g_timelineWritePending = 0;
+
+static uint32_t g_writeCategory = 0;
+static uint32_t g_writeMission = 0;
+static uint32_t g_writeEntry = 0;
+static uint8_t g_writeState = 0;
 
 //Maybe grab these values from the locations.json?
 const std::unordered_map<int, std::array<int64_t, 5>> CAR_LOCATIONS = {
@@ -84,6 +94,13 @@ uint64_t g_inventoryPtr = 0;
 uint64_t g_param1 = 0;
 uint64_t g_timelineParam1 = 0;
 
+timeline_lookup_t original_timeline_lookup = nullptr;
+
+uint64_t g_timelineObject = 0;
+uint64_t g_timelineArray = 0;
+uint32_t g_timelineCount = 0;
+volatile LONG g_timelineReady = 0;
+
 struct TaskState
 {
     uint32_t p4;
@@ -94,6 +111,393 @@ struct TaskState
 
 TaskState g_taskStates[16] = {};
 
+using timeline_tree_find_t = uint64_t(*)(
+    uint64_t* treeHandle,
+    uint32_t* key
+);
+
+uint64_t hooked_timeline_lookup(
+    uint64_t param1,
+    uint32_t param2,
+    uint32_t param3,
+    uint32_t param4,
+    uint8_t param5,
+    int8_t param6
+)
+{
+    // Only capture once, and only if the object exists.
+    if (InterlockedCompareExchange(&g_timelineReady, 0, 0) == 0 && param1)
+    {
+        uint64_t array =
+            *reinterpret_cast<uint64_t*>(param1 + 0xC0);
+
+        uint32_t count =
+            *reinterpret_cast<uint32_t*>(param1 + 0xCC);
+
+        if (array && count > 0 && count < 100000)
+        {
+            // Claim the capture so another thread cannot publish simultaneously.
+            if (InterlockedCompareExchange(&g_timelineReady, -1, 0) == 0)
+            {
+                g_timelineObject = param1;
+                g_timelineArray = array;
+                g_timelineCount = count;
+
+                // Publish the captured data.
+                InterlockedExchange(&g_timelineReady, 1);
+            }
+        }
+    }
+
+    if (param2 != 4 && param2 != 0)
+    {
+        printf(
+            "/b[Timeline] Lookup:/g %u / %u / %u /w| /bState value:/g %u\n",
+            param2,
+            param3,
+            param4,
+            param5
+        );
+    }
+
+    // Normal game lookup.
+    uint64_t result = original_timeline_lookup(
+        param1,
+        param2,
+        param3,
+        param4,
+        param5,
+        param6
+    );
+
+    // Process a queued write on the game thread.
+    if (InterlockedCompareExchange(
+        &g_timelineWritePending, 0, 1
+    ) == 1)
+    {
+        uint32_t category = g_writeCategory;
+        uint32_t mission = g_writeMission;
+        uint32_t entry = g_writeEntry;
+        uint8_t state = g_writeState;
+
+        uint64_t object = g_timelineObject;
+
+        if (object &&
+            InterlockedCompareExchange(&g_timelineReady, 0, 0) == 1)
+        {
+            printf(
+                "/b[Timeline] Writing: %u / %u / %u = %u\n",
+                category,
+                mission,
+                entry,
+                state
+            );
+
+            uint64_t writeResult = original_timeline_lookup(
+                object,
+                category,
+                mission,
+                entry,
+                state,
+                1
+            );
+
+            printf(
+                "/b[Timeline] Write result: /g%llu\n",
+                static_cast<unsigned long long>(writeResult)
+            );
+        }
+        else
+        {
+            printf("/r[Timeline] Write failed: timeline object unavailable!\n");
+        }
+
+        InterlockedExchange(&g_timelineWritePending, 0);
+    }
+
+    return result;
+}
+
+bool HookTimeline()
+{
+    uintptr_t address = PatternScan(
+        "48 89 5C 24 08 "
+        "48 89 74 24 10 "
+        "48 89 7C 24 20 "
+        "44 89 44 24 18 "
+        "41 56 "
+        "48 83 EC 30 "
+        "44 8B 91 CC 00 00 00"
+    );
+
+    if (!address)
+    {
+        printf("/r[Timeline] Failed to find timeline function!\n");
+        return false;
+    }
+
+    printf("/b[Timeline] Found timeline function at: %p\n", (void*)address);
+
+    if (MH_CreateHook(
+        (LPVOID)address,
+        &hooked_timeline_lookup,
+        (LPVOID*)&original_timeline_lookup
+    ) != MH_OK)
+    {
+        printf("/r[Timeline] Failed to create hook!\n");
+        return false;
+    }
+
+    if (MH_EnableHook((LPVOID)address) != MH_OK)
+    {
+        printf("/r[Timeline] Failed to enable hook!\n");
+        MH_RemoveHook((LPVOID)address);
+        return false;
+    }
+
+    printf("/b[Timeline] Hook installed successfully!\n");
+
+    return true;
+}
+
+void SetTimelineState(
+    uint32_t category,
+    uint32_t mission,
+    uint32_t entry,
+    uint32_t state
+)
+{
+    if (InterlockedCompareExchange(&g_timelineReady, 0, 0) != 1)
+    {
+        printf("/r[Timeline] Timeline data not ready!\n");
+        return;
+    }
+
+    if (state > 1)
+    {
+        printf("/r[Timeline] State must be 0 or 1!\n");
+        return;
+    }
+
+    // Only allow one pending write at a time.
+    if (InterlockedCompareExchange(&g_timelineWritePending, -1, 0) != 0)
+    {
+        printf("/r[Timeline] Another write is already pending!\n");
+        return;
+    }
+
+    g_writeCategory = category;
+    g_writeMission = mission;
+    g_writeEntry = entry;
+    g_writeState = static_cast<uint8_t>(state);
+
+    InterlockedExchange(&g_timelineWritePending, 1);
+
+    printf(
+        "/b[Timeline] Queued write: /g%u / %u / %u = %u\n",
+        category,
+        mission,
+        entry,
+        state
+    );
+}
+
+bool GetTimelineState(
+    uint32_t category,
+    uint32_t mission,
+    uint32_t entry,
+    uint8_t& rawByte
+)
+{
+    if (InterlockedCompareExchange(&g_timelineReady, 0, 0) != 1)
+        return false;
+
+    uint64_t object = g_timelineObject;
+
+    if (!object)
+        return false;
+
+    uint32_t count = *reinterpret_cast<uint32_t*>(object + 0xCC);
+    uint64_t array = *reinterpret_cast<uint64_t*>(object + 0xC0);
+
+    if (!array || !count || count > 100000)
+        return false;
+
+    // Find the category in the outer array.
+    uint32_t left = 0;
+    uint32_t right = count;
+
+    uint64_t treeHandle = 0;
+    bool foundCategory = false;
+
+    while (left < right)
+    {
+        uint32_t mid = left + (right - left) / 2;
+
+        uint64_t record = array + (uint64_t)mid * 0x10;
+        uint32_t currentCategory =
+            *reinterpret_cast<uint32_t*>(record);
+
+        if (category < currentCategory)
+        {
+            right = mid;
+        }
+        else if (category > currentCategory)
+        {
+            left = mid + 1;
+        }
+        else
+        {
+            treeHandle = record + 8;
+            foundCategory = true;
+            break;
+        }
+    }
+
+    if (!foundCategory)
+        return false;
+
+    // Find the mission node using the game's tree lookup.
+    static timeline_tree_find_t treeFind =
+        reinterpret_cast<timeline_tree_find_t>(
+            GetModuleHandleA(nullptr)
+            ? reinterpret_cast<uintptr_t>(GetModuleHandleA(nullptr)) + 0x864480
+            : 0
+            );
+
+    if (!treeFind)
+        return false;
+
+    uint64_t node = treeFind(
+        reinterpret_cast<uint64_t*>(treeHandle),
+        &mission
+    );
+
+    printf(
+        "[Timeline Debug] Mission node: %p | Category: %u | Mission: %u\n",
+        reinterpret_cast<void*>(node),
+        category,
+        mission
+    );
+
+    if (!node)
+        return false;
+
+    printf(
+        "[Timeline Debug] Entries pointer: %p | Entry count: %u\n",
+        reinterpret_cast<void*>(
+            *reinterpret_cast<uint64_t*>(node + 0x20)
+            ),
+        *reinterpret_cast<uint32_t*>(node + 0x2C)
+    );
+
+    uint64_t entries =
+        *reinterpret_cast<uint64_t*>(node + 0x20);
+
+    uint32_t entryCount =
+        *reinterpret_cast<uint32_t*>(node + 0x2C);
+
+    if (!entries || entryCount > 100000)
+        return false;
+
+    for (uint32_t i = 0; i < entryCount; i++)
+    {
+        uint64_t currentEntry = entries + (uint64_t)i * 0x18;
+
+        uint32_t values[6];
+
+        memcpy(values, reinterpret_cast<void*>(currentEntry), sizeof(values));
+
+        printf(
+            "[Timeline Debug] Entry %u: %u / %u / %u / %u / %u / %u | Raw byte: 0x%02X\n",
+            i,
+            values[0],
+            values[1],
+            values[2],
+            values[3],
+            values[4],
+            values[5],
+            *reinterpret_cast<uint8_t*>(currentEntry + 4)
+        );
+    }
+
+    // Each inner entry is 0x18 bytes (six uint32 values).
+    for (uint32_t i = 0; i < entryCount; i++)
+    {
+        uint64_t currentEntry = entries + (uint64_t)i * 0x18;
+
+        uint32_t currentEntryID =
+            *reinterpret_cast<uint32_t*>(currentEntry + 0x10);
+
+        if (currentEntryID == entry)
+        {
+            rawByte =
+                *reinterpret_cast<uint8_t*>(currentEntry + 0x04);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void MonitorTimeline()
+{
+    static DWORD lastCheck = 0;
+
+    DWORD now = GetTickCount();
+    if (now - lastCheck < 100)
+        return;
+
+    lastCheck = now;
+
+    if (InterlockedCompareExchange(&g_timelineReady, 0, 0) != 1)
+        return;
+
+    static uint64_t previousArray = 0;
+    static uint32_t previousCount = 0;
+    static std::vector<uint8_t> previousSnapshot;
+    static bool initialized = false;
+
+    uint64_t array = g_timelineArray;
+    uint32_t count = g_timelineCount;
+
+    if (!array || count == 0 || count >= 100000)
+        return;
+
+    constexpr size_t RECORD_SIZE = 0x10;
+    size_t totalSize = static_cast<size_t>(count) * RECORD_SIZE;
+
+    std::vector<uint8_t> currentSnapshot(totalSize);
+
+    SIZE_T bytesRead = 0;
+
+    if (!ReadProcessMemory(
+        GetCurrentProcess(),
+        reinterpret_cast<LPCVOID>(array),
+        currentSnapshot.data(),
+        totalSize,
+        &bytesRead
+    ) || bytesRead != totalSize)
+    {
+        return;
+    }
+
+    if (!initialized ||
+        previousArray != array ||
+        previousCount != count)
+    {
+        previousSnapshot = currentSnapshot;
+        previousArray = array;
+        previousCount = count;
+        initialized = true;
+
+        printf("/b[Timeline] Monitoring started. Records: %u\n", count);
+        return;
+    }
+
+    previousSnapshot = currentSnapshot;
+}
 
 
 uint64_t hooked_potentially_set_tasks(
@@ -167,7 +571,7 @@ void SetTimelineState(
     );
 
     printf(
-        "[Timeline] Set /g%u/%u/%u\n",
+        "/b[Timeline] Set /g%u/%u/%u\n",
         category,
         mission,
         state
